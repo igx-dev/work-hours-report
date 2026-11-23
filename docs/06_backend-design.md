@@ -19,7 +19,7 @@
 | `weekly-report-fn` | EventBridge Scheduler(月曜 9:00 JST) | 週次レポートを Slack に投稿 | 読み取りのみ |
 | `alarm-fn` | SNS(CloudWatch アラーム) | アラームを Slack に流す | なし |
 
-定期処理のスケジュールは prod だけ有効にし、dev では止めておく(dev で試す時は関数を手で呼ぶ)。Slack の Secrets Manager の ARN が空の時は、投稿せずにログに出す。
+定期処理のスケジュールはいつも動かしておき、送るかどうかは設定画面のオン・オフ(DynamoDB の設定)で決める。アラームの通知は設定に関係なくいつも流す。Slack の Webhook URL がまだ入っていない時は、投稿せずにログに出す。
 
 API は1つの関数にまとめ、中でパスごとに処理を振り分ける(Powertools の `APIGatewayRestResolver`)。関数が少ない方が、設定とデプロイが簡単になる。
 
@@ -35,7 +35,7 @@ backend/
 │   ├── handlers/           関数ごとの入口(api.py、scheduled.py: remind / weekly_report / alarm)
 │   ├── services/           業務ルール(rules.py, reports.py, projects.py, dashboard.py, notify.py)
 │   ├── repositories/       DynamoDB の読み書き(dynamo.py)
-│   ├── clients/            Slack、Cognito
+│   ├── clients/            Slack、Cognito、Secrets Manager
 │   ├── errors.py           API のエラーの形
 │   └── holidays.json       祝日の一覧(未提出者の投稿を休む日)
 └── tests/
@@ -66,6 +66,13 @@ backend/
 2. Cognito から member グループのユーザー一覧を取る
 3. 1人ずつ当日の日報があるかを確かめ、ない人の名前を集める
 4. 「今日の日報がまだの人: 山田さん、佐藤さん」と入力画面へのリンクを、Slack のチャンネルに Incoming Webhook で1回投稿する(全員出していれば投稿しない)
+
+### 設定(`/admin/settings`)
+
+- Slack の Webhook URL は Secrets Manager に書き込むだけ。画面に返すのは末尾4文字(DynamoDB の設定に一緒に持つ)だけで、URL の全体は返さない
+- URL は `https://hooks.slack.com/` で始まるものだけ受け付ける
+- テスト送信は、保存した URL に試しのメッセージを1件送る。送れなかった時は 502(`SLACK_ERROR`)
+- 通知のオン・オフ(未提出者のお知らせ、週次レポート)は DynamoDB の設定1件(PK `SETTINGS` / SK `APP`)に持つ。まだ保存していない時は、どちらもオン
 
 ### ユーザー管理(`/admin/users`)
 

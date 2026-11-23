@@ -336,6 +336,83 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
 
+  /admin/settings:
+    get:
+      tags: [admin]
+      summary: 設定(Slack をつないであるか、Webhook URL の末尾4文字、通知のオン・オフ)
+      operationId: getSettings
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Settings" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    patch:
+      tags: [admin]
+      summary: 通知のオン・オフ
+      operationId: updateSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                remindEnabled: { type: boolean }
+                weeklyReportEnabled: { type: boolean }
+      responses:
+        "200":
+          description: 変えたあとの設定
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Settings" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /admin/settings/slack-webhook:
+    put:
+      tags: [admin]
+      summary: Slack の Webhook URL を保存する(書き込むだけ。読み出しはできない)
+      operationId: setSlackWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string, pattern: "^https://hooks\\.slack\\.com/", maxLength: 500 }
+      responses:
+        "200":
+          description: 保存したあとの設定
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Settings" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /admin/settings/slack-test:
+    post:
+      tags: [admin]
+      summary: 保存した Webhook URL に、試しのメッセージを1件送る
+      operationId: sendSlackTest
+      responses:
+        "204": { description: 送った }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "502":
+          description: Slack に送れなかった
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
 components:
   securitySchemes:
     cognito:
@@ -401,6 +478,14 @@ components:
         email: { type: string, format: email }
         roles: { $ref: "#/components/schemas/Roles" }
         enabled: { type: boolean, description: false なら利用を止めている }
+    Settings:
+      type: object
+      required: [slackConfigured, remindEnabled, weeklyReportEnabled]
+      properties:
+        slackConfigured: { type: boolean }
+        slackHint: { type: string, nullable: true, description: Webhook URL の末尾4文字 }
+        remindEnabled: { type: boolean, description: 未提出者のお知らせ(平日 18:00) }
+        weeklyReportEnabled: { type: boolean, description: 週次レポート(月曜 9:00) }
     ReportInput:
       type: object
       required: [hours]
@@ -448,6 +533,7 @@ components:
             - DAILY_LIMIT_EXCEEDED
             - PROJECT_CLOSED
             - TOO_MANY_REQUESTS
+            - SLACK_ERROR
             - INTERNAL_ERROR
         message: { type: string }
         details: { type: object, additionalProperties: true }

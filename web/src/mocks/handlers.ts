@@ -18,6 +18,12 @@ export function createHandlers(db: MockDb, base = '/api') {
   };
   const sum = (xs: { hours: number }[]) => xs.reduce((a, r) => a + r.hours, 0);
   const strip = ({ userId: _u, ...r }: MockDb['reports'][number]) => r;
+  const settingsView = () => ({
+    slackConfigured: Boolean(db.settings.slackHint),
+    slackHint: db.settings.slackHint ?? null,
+    remindEnabled: db.settings.remindEnabled,
+    weeklyReportEnabled: db.settings.weeklyReportEnabled,
+  });
 
   return [
     http.all(`${base}/*`, ({ request }) => {
@@ -118,6 +124,28 @@ export function createHandlers(db: MockDb, base = '/api') {
       Object.assign(target, changes);
       return HttpResponse.json({ ...target, enabled: target.enabled !== false });
     }),
+
+    http.get(`${base}/admin/settings`, () => HttpResponse.json(settingsView())),
+
+    http.patch(`${base}/admin/settings`, async ({ request }) => {
+      Object.assign(db.settings, await request.json());
+      return HttpResponse.json(settingsView());
+    }),
+
+    http.put(`${base}/admin/settings/slack-webhook`, async ({ request }) => {
+      const { url } = (await request.json()) as { url: string };
+      if (!url.startsWith('https://hooks.slack.com/')) {
+        return err(400, 'VALIDATION_ERROR', 'Slack の Incoming Webhook の URL(https://hooks.slack.com/ で始まる)を入れてください');
+      }
+      db.settings.slackHint = url.slice(-4);
+      return HttpResponse.json(settingsView());
+    }),
+
+    http.post(`${base}/admin/settings/slack-test`, () =>
+      db.settings.slackHint
+        ? new HttpResponse(null, { status: 204 })
+        : err(400, 'VALIDATION_ERROR', 'Slack の Webhook URL がまだ設定されていません'),
+    ),
 
     http.get(`${base}/admin/dashboard/summary`, ({ request }) => {
       const month = new URL(request.url).searchParams.get('month') ?? '';

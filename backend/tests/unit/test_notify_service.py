@@ -78,3 +78,17 @@ def test_週次レポートは_まだ始まっていないプロジェクトを0
     slack = FakeSlack()
     service(repo, slack).weekly_report(date(2027, 1, 18))
     assert "・これから始まる: 0時間(予定の0%)" in slack.posts[0]
+
+
+def test_未提出者のお知らせがオフなら投稿しない(repo):
+    repo.put_settings({"remindEnabled": False, "weeklyReportEnabled": True})
+    slack = FakeSlack()
+    service(repo, slack).remind(date(2027, 1, 12))
+    assert slack.posts == []
+
+
+def test_週次レポートがオフなら投稿しない(repo):
+    repo.put_settings({"remindEnabled": True, "weeklyReportEnabled": False})
+    slack = FakeSlack()
+    service(repo, slack).weekly_report(date(2027, 1, 18))
+    assert slack.posts == []

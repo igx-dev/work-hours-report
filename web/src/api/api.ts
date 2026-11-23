@@ -13,6 +13,7 @@ import type {
   ProjectStatus,
   Report,
   ReportInput,
+  Settings,
   Summary,
   User,
 } from './types';
@@ -33,7 +34,7 @@ export const api = createApi({
   reducerPath: 'api',
   baseQuery: (args, store, extraOptions) =>
     rawBaseQuery((store.extra as ThunkExtra).apiBaseUrl)(args, store, extraOptions),
-  tagTypes: ['Me', 'Reports', 'Projects', 'Dashboard', 'Users'],
+  tagTypes: ['Me', 'Reports', 'Projects', 'Dashboard', 'Users', 'Settings'],
   endpoints: (b) => ({
     getMe: b.query<User, void>({ query: () => '/me', providesTags: ['Me'] }),
 
@@ -77,6 +78,19 @@ export const api = createApi({
       invalidatesTags: ['Users', 'Dashboard', 'Me'],
     }),
 
+    getSettings: b.query<Settings, void>({ query: () => '/admin/settings', providesTags: ['Settings'] }),
+    updateSettings: b.mutation<Settings, Partial<Pick<Settings, 'remindEnabled' | 'weeklyReportEnabled'>>>({
+      query: (body) => ({ url: '/admin/settings', method: 'PATCH', body }),
+      invalidatesTags: ['Settings'],
+    }),
+    setSlackWebhook: b.mutation<Settings, string>({
+      query: (url) => ({ url: '/admin/settings/slack-webhook', method: 'PUT', body: { url } }),
+      invalidatesTags: ['Settings'],
+    }),
+    sendSlackTest: b.mutation<void, void>({
+      query: () => ({ url: '/admin/settings/slack-test', method: 'POST' }),
+    }),
+
     getSummary: b.query<Summary, string>({
       query: (month) => ({ url: '/admin/dashboard/summary', params: { month } }),
       providesTags: ['Dashboard'],
@@ -102,6 +116,10 @@ export const {
   useListUsersQuery,
   useCreateUserMutation,
   useUpdateUserMutation,
+  useGetSettingsQuery,
+  useUpdateSettingsMutation,
+  useSetSlackWebhookMutation,
+  useSendSlackTestMutation,
   useGetSummaryQuery,
   useGetProjectDashboardQuery,
 } = api;

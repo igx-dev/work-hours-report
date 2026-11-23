@@ -15,11 +15,14 @@ from aws_lambda_powertools.event_handler import APIGatewayRestResolver, CORSConf
 from aws_lambda_powertools.logging import correlation_paths
 
 from app.clients.cognito import CognitoDirectory
+from app.clients.secrets import SecretStore
+from app.clients.slack import post_to_webhook
 from app.errors import AppError, forbidden, validation
 from app.repositories.dynamo import DynamoRepo
 from app.services.dashboard import DashboardService
 from app.services.projects import ProjectService
 from app.services.reports import ReportService, _today_jst
+from app.services.settings import SettingsService
 from app.services.users import UserService
 
 logger = Logger(service="api")
@@ -35,6 +38,11 @@ EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 @cache
 def get_repo():
     return DynamoRepo(boto3.resource("dynamodb").Table(os.environ["TABLE_NAME"]))
+
+
+@cache
+def get_secrets():
+    return SecretStore(os.environ["SLACK_SECRET_ARN"])
 
 
 @cache
@@ -267,6 +275,47 @@ def update_user(target_id: str):
     if not changes:
         raise validation("変える項目を1つ以上送ってください")
     return users().update(user_id(), target_id, changes)
+
+
+# --- 設定(Slack と通知のオン・オフ) ---
+
+
+def settings() -> SettingsService:
+    return SettingsService(get_repo(), get_secrets(), lambda url, text: post_to_webhook(url, text))
+
+
+@app.get("/admin/settings")
+def get_settings():
+    require_admin()
+    return settings().get()
+
+
+@app.patch("/admin/settings")
+def update_settings():
+    require_admin()
+    data = body()
+    changes = {}
+    for key in ("remindEnabled", "weeklyReportEnabled"):
+        if key in data:
+            if not isinstance(data[key], bool):
+                raise validation(f"{key} は true か false で指定してください")
+            changes[key] = data[key]
+    if not changes:
+        raise validation("変える項目を1つ以上送ってください")
+    return settings().update(changes)
+
+
+@app.put("/admin/settings/slack-webhook")
+def set_slack_webhook():
+    require_admin()
+    return settings().set_webhook(text(body(), "url", max_length=500))
+
+
+@app.post("/admin/settings/slack-test")
+def send_slack_test():
+    require_admin()
+    settings().send_test()
+    return Response(status_code=204, body="")
 
 
 # --- エラー ---

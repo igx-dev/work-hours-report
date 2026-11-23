@@ -8,6 +8,7 @@ class FakeRepo:
         self.projects: dict[str, dict] = {}
         self.reports: dict[tuple[str, str, str], dict] = {}
         self.users: dict[str, dict] = {}
+        self.settings: dict = {}
 
     # --- テストの準備用 ---
     def add_project(self, project_id, name, status="ACTIVE", planned=100,
@@ -33,6 +34,12 @@ class FakeRepo:
 
     def get_user(self, user_id):
         return self.users.get(user_id)
+
+    def get_settings(self):
+        return dict(self.settings)
+
+    def put_settings(self, settings):
+        self.settings = dict(settings)
 
     def put_user(self, user):
         self.users[user["userId"]] = dict(user)
@@ -101,3 +108,16 @@ class FakeDirectory:
 
     def set_enabled(self, user_id, enabled):
         self.users[user_id]["enabled"] = enabled
+
+
+class FakeSecretStore:
+    """テスト用の偽 Secrets Manager(値を1つだけ持つ)。"""
+
+    def __init__(self):
+        self.value: str | None = None
+
+    def get(self):
+        return self.value
+
+    def put(self, value):
+        self.value = value

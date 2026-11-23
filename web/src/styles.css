@@ -279,3 +279,10 @@ tr.future td { color: #b8c0c7; }
 .date-picker .today { width: auto; padding: 0 16px; font-size: 15px; font-weight: 600; color: var(--primary); }
 .date-picker .today:disabled { color: var(--muted); opacity: 1; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* --- 設定 --- */
+.button-row { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+.toggle-row { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.toggle-row:last-of-type { border-bottom: none; }
+.toggle-row .check { font-weight: 600; }
+.toggle-row .hint { margin: 0 0 4px 28px; }

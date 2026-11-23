@@ -36,6 +36,10 @@ API の正は [`api/openapi.yaml`](../api/openapi.yaml)(OpenAPI 3.0)。この文
 | GET | `/admin/users` | ユーザーの一覧 | admin | F-11 |
 | POST | `/admin/users` | ユーザーの招待 | admin | F-11 |
 | PATCH | `/admin/users/{userId}` | 名前・役割の変更、利用の停止と再開 | admin | F-11 |
+| GET | `/admin/settings` | 設定(Slack をつないであるか、末尾4文字、通知のオン・オフ) | admin | F-12 |
+| PATCH | `/admin/settings` | 通知のオン・オフ | admin | F-12 |
+| PUT | `/admin/settings/slack-webhook` | Slack の Webhook URL を保存(書き込むだけ) | admin | F-12 |
+| POST | `/admin/settings/slack-test` | Slack にテスト送信 | admin | F-12 |
 
 ## エラーの形
 
@@ -60,6 +64,7 @@ API の正は [`api/openapi.yaml`](../api/openapi.yaml)(OpenAPI 3.0)。この文
 | 422 | `PROJECT_CLOSED` | 終了したプロジェクトへの登録 |
 | 429 | `TOO_MANY_REQUESTS` | API Gateway のスロットリング |
 | 500 | `INTERNAL_ERROR` | 想定外。ログに相関 ID を残し、レスポンスにも返す |
+| 502 | `SLACK_ERROR` | テスト送信で Slack に送れなかった |
 
 ## 制限
 

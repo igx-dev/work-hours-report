@@ -8,7 +8,8 @@ import { addMonths, currentMonth, todayIso } from '../lib/dates';
 export type MockUser = { userId: string; name: string; email: string; roles: ('member' | 'admin')[]; enabled?: boolean };
 export type StoredReport = Report & { userId: string };
 
-export type MockDb = { users: MockUser[]; projects: Project[]; reports: StoredReport[] };
+export type MockSettings = { slackHint?: string; remindEnabled: boolean; weeklyReportEnabled: boolean };
+export type MockDb = { users: MockUser[]; projects: Project[]; reports: StoredReport[]; settings: MockSettings };
 
 export const USERS: MockUser[] = [
   { userId: 'u-admin', name: '管理 花子', email: 'admin@example.com', roles: ['member', 'admin'] },
@@ -17,7 +18,12 @@ export const USERS: MockUser[] = [
 ];
 
 export function emptyDb(): MockDb {
-  return { users: USERS.map((u) => ({ ...u, roles: [...u.roles] })), projects: [], reports: [] };
+  return {
+    users: USERS.map((u) => ({ ...u, roles: [...u.roles] })),
+    projects: [],
+    reports: [],
+    settings: { remindEnabled: true, weeklyReportEnabled: true },
+  };
 }
 
 /** 見本モード用: プロジェクト3つと、過去3か月分の日報 */

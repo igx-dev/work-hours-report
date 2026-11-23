@@ -6,6 +6,7 @@ import { LoginPage } from '../features/login/LoginPage';
 import { ProjectsPage } from '../features/projects/ProjectsPage';
 import { ReportsPage } from '../features/reports/ReportsPage';
 import { EntryPage } from '../features/entry/EntryPage';
+import { SettingsPage } from '../features/settings/SettingsPage';
 import { UsersPage } from '../features/users/UsersPage';
 import { Layout } from './Layout';
 
@@ -21,6 +22,7 @@ export function App() {
         <Route path="admin/projects" element={<ProjectsPage />} />
         <Route path="admin/users" element={<UsersPage />} />
         <Route path="admin/exports" element={<ExportsPage />} />
+        <Route path="admin/settings" element={<SettingsPage />} />
         <Route path="*" element={<p>ページが見つかりません</p>} />
       </Route>
     </Routes>

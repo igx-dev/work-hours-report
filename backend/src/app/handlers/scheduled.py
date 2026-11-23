@@ -8,6 +8,7 @@ from pathlib import Path
 from aws_lambda_powertools import Logger
 
 from app.clients.cognito import list_members
+from app.clients.secrets import SecretStore
 from app.clients.slack import SlackWebhook
 from app.handlers.api import get_repo
 from app.services.notify import NotifyService
@@ -17,9 +18,14 @@ logger = Logger(service="scheduled")
 HOLIDAYS = set(json.loads((Path(__file__).parent.parent / "holidays.json").read_text()))
 
 
+def _slack() -> SlackWebhook:
+    arn = os.environ.get("SLACK_SECRET_ARN", "")
+    return SlackWebhook(SecretStore(arn) if arn else None)
+
+
 def _service() -> NotifyService:
     return NotifyService(
-        get_repo(), SlackWebhook(os.environ.get("SLACK_SECRET_ARN", "")),
+        get_repo(), _slack(),
         members=lambda: list_members(os.environ["USER_POOL_ID"]),
         app_url=os.environ["APP_URL"], holidays=HOLIDAYS)
 
@@ -36,8 +42,8 @@ def weekly_report(event, context):
 
 @logger.inject_lambda_context
 def alarm(event, context):
-    """CloudWatch アラーム(SNS 経由)を Slack に流す。"""
-    slack = SlackWebhook(os.environ.get("SLACK_SECRET_ARN", ""))
+    """CloudWatch アラーム(SNS 経由)を Slack に流す。設定のオン・オフに関係なく、いつも流す。"""
+    slack = _slack()
     for record in event.get("Records", []):
         message = json.loads(record["Sns"]["Message"])
         slack.post(f"🚨 {message.get('AlarmName')}: {message.get('NewStateReason')}")

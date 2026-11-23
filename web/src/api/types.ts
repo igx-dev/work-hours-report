@@ -29,3 +29,9 @@ export type ProjectDashboard = { project: Project; months: ProjectMonth[] };
 
 export type Role = 'member' | 'admin';
 export type ManagedUser = { userId: string; name: string; email: string; roles: Role[]; enabled: boolean };
+export type Settings = {
+  slackConfigured: boolean;
+  slackHint: string | null;
+  remindEnabled: boolean;
+  weeklyReportEnabled: boolean;
+};

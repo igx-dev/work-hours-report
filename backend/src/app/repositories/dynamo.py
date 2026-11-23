@@ -49,6 +49,14 @@ class DynamoRepo:
         self.table.put_item(Item=_to_db(
             {**user, "PK": f"USER#{user['userId']}", "SK": "PROFILE", "type": "User"}))
 
+    # --- 設定(1件だけ) ---
+    def get_settings(self) -> dict:
+        item = self.table.get_item(Key={"PK": "SETTINGS", "SK": "APP"}).get("Item")
+        return _from_db(item) if item else {}
+
+    def put_settings(self, settings: dict) -> None:
+        self.table.put_item(Item={**settings, "PK": "SETTINGS", "SK": "APP", "type": "Settings"})
+
     # --- プロジェクト(A-05) ---
     def get_project(self, project_id):
         item = self.table.get_item(Key={"PK": f"PROJECT#{project_id}", "SK": "META"}).get("Item")

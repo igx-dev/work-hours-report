@@ -46,7 +46,7 @@ flowchart LR
 | Lambda(Python) | API の処理、定期処理 | 呼ばれた分だけの課金 |
 | DynamoDB | 全データの保存 | サーバーレスと相性がよく、アクセスパターンが決まっているので RDB は不要 |
 | EventBridge Scheduler | 平日 18:00 の未提出者の投稿、月曜 9:00 の週次レポート | タイムゾーン(Asia/Tokyo)を指定できる |
-| Secrets Manager | Slack の Incoming Webhook URL | URL を知っていれば誰でも投稿できるため、コードや環境変数に置かない |
+| Secrets Manager | Slack の Incoming Webhook URL | URL を知っていれば誰でも投稿できるため、コードや環境変数に置かない。シークレットは SAM で作り(最初の値は `unset`)、管理者が設定画面から URL を書き込む |
 | CloudWatch | ログ、メトリクス、アラーム | Lambda と API Gateway の標準。アラームは SNS → alarm Lambda → Slack と流す |
 | AWS Budgets | 費用が月 500 円を超えたらメールで知らせる | 消し忘れや想定外のアクセスに気付くため |
 | Slack | 未提出者の投稿、週次レポート、アラームの通知先 | 利用者が普段見ている場所に届ける |
@@ -96,7 +96,7 @@ sequenceDiagram
 | --- | --- | --- |
 | `TABLE_NAME` | Lambda 環境変数(SAM が設定) | 全 Lambda |
 | `USER_POOL_ID` | Lambda 環境変数(SAM が設定) | api Lambda(ユーザー管理)、remind Lambda |
-| `SLACK_SECRET_ARN` | Lambda 環境変数 → Secrets Manager(Webhook URL) | remind / weekly-report Lambda、アラーム通知 |
+| `SLACK_SECRET_ARN` | Lambda 環境変数(SAM が設定)→ Secrets Manager(Webhook URL) | api Lambda(設定画面での書き込みとテスト送信)、remind / weekly-report / alarm Lambda |
 | `APP_URL` | Lambda 環境変数 | remind Lambda(投稿のリンク) |
 | `VITE_API_BASE_URL` | Web のビルド時変数 | Web |
 | `VITE_COGNITO_USER_POOL_ID` / `VITE_COGNITO_CLIENT_ID` | Web のビルド時変数 | Web |
@@ -107,4 +107,4 @@ sequenceDiagram
 
 1. `sam delete --stack-name work-hours-report-<env>` で、Lambda、API Gateway、DynamoDB、Cognito、EventBridge Scheduler を消す
 2. S3 のバケットを空にしてから消し、CloudFront のディストリビューションを無効にしてから消す
-3. 残った CloudWatch のロググループと Secrets Manager のシークレットを消す
+3. 残った CloudWatch のロググループを消す(Secrets Manager のシークレットはスタックと一緒に消え、7日後に完全に消える)

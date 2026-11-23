@@ -30,6 +30,7 @@ test('admin のメニューには、ダッシュボードとプロジェクト�
   expect(nav).toHaveTextContent('プロジェクト管理');
   expect(nav).toHaveTextContent('ユーザー管理');
   expect(nav).toHaveTextContent('CSV 出力');
+  expect(nav).toHaveTextContent('設定');
 });
 
 test('ログインしていなければ、ログイン画面に移る', async () => {

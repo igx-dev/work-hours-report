@@ -24,7 +24,7 @@ GSI1 は「プロジェクトから日報を引く」と「プロジェクトの
 | `PK` | S | パーティションキー |
 | `SK` | S | ソートキー |
 | `GSI1PK` / `GSI1SK` | S | 索引のキー |
-| `type` | S | `User` / `Project` / `Report` |
+| `type` | S | `User` / `Project` / `Report` / `Settings` |
 
 課金はオンデマンド。ポイントインタイムリカバリを有効にする。
 
@@ -50,6 +50,15 @@ Cognito の `sub` を `userId` に使う。ロール(admin / member)とメール
 | plannedHours | 480 |
 | startDate / endDate | 2027-01-01 / 2027-03-31 |
 | status | `ACTIVE` または `CLOSED` |
+
+### Settings(設定、1件だけ)
+
+| 項目 | 例 |
+| --- | --- |
+| PK / SK | `SETTINGS` / `APP` |
+| remindEnabled | true(未提出者のお知らせ) |
+| weeklyReportEnabled | true(週次レポート) |
+| slackHint | `1234`(Webhook URL の末尾4文字。URL の全体は Secrets Manager にだけ置く) |
 
 ### Report(日報)
 

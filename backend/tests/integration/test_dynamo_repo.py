@@ -82,3 +82,9 @@ def test_ユーザーを書いて読める(repo):
 def test_プロフィールしかない人は直前の日報なし(repo):
     repo.put_user({"userId": "u-1", "name": "山田 太郎"})
     assert repo.latest_report_date_before("u-1", date(2027, 1, 12)) is None
+
+
+def test_設定を書いて読める_なければ空(repo):
+    assert repo.get_settings() == {}
+    repo.put_settings({"remindEnabled": False, "slackHint": "1234"})
+    assert repo.get_settings() == {"remindEnabled": False, "slackHint": "1234"}

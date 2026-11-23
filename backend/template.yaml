@@ -6,14 +6,7 @@ Parameters:
   Env:
     Type: String
     AllowedValues: [dev, prod]
-  SlackSecretArn:
-    Type: String
-    Default: ""
-    Description: Slack の Webhook URL を入れた Secrets Manager の ARN(空なら投稿しない)
 
-Conditions:
-  IsProd: !Equals [!Ref Env, prod]
-  HasSlack: !Not [!Equals [!Ref SlackSecretArn, ""]]
 
 Globals:
   Function:
@@ -29,6 +22,7 @@ Globals:
         TABLE_NAME: !Ref Table
         APP_URL: !Sub "https://${Distribution.DomainName}"
         POWERTOOLS_SERVICE_NAME: work-hours-report
+        SLACK_SECRET_ARN: !Ref SlackWebhookSecret
 
 Resources:
   # --- データ ---
@@ -54,6 +48,14 @@ Resources:
             - { AttributeName: GSI1PK, KeyType: HASH }
             - { AttributeName: GSI1SK, KeyType: RANGE }
           Projection: { ProjectionType: ALL }
+
+  # --- 鍵の保管場所(Slack の Webhook URL。管理者が設定画面で入れる) ---
+  SlackWebhookSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "work-hours-report-${Env}/slack-webhook"
+      Description: Slack の Incoming Webhook URL(設定画面から書き込む)
+      SecretString: unset
 
   # --- ログイン ---
   UserPool:
@@ -131,6 +133,10 @@ Resources:
           USER_POOL_ID: !Ref UserPool
       Policies:
         - DynamoDBCrudPolicy: { TableName: !Ref Table }
+        - Statement: # 設定画面: Slack の Webhook URL の書き込みと、テスト送信のための読み出し
+            - Effect: Allow
+              Action: [secretsmanager:GetSecretValue, secretsmanager:PutSecretValue]
+              Resource: !Ref SlackWebhookSecret
         - Statement: # ユーザー管理(admin の画面)で使う
             - Effect: Allow
               Action:
@@ -158,46 +164,36 @@ Resources:
       Environment:
         Variables:
           USER_POOL_ID: !Ref UserPool
-          SLACK_SECRET_ARN: !Ref SlackSecretArn
       Policies:
         - DynamoDBReadPolicy: { TableName: !Ref Table }
         - Statement:
             - Effect: Allow
               Action: [cognito-idp:ListUsers, cognito-idp:ListUsersInGroup]
               Resource: !GetAtt UserPool.Arn
-        - !If
-          - HasSlack
-          - AWSSecretsManagerGetSecretValuePolicy: { SecretArn: !Ref SlackSecretArn }
-          - !Ref AWS::NoValue
+        - AWSSecretsManagerGetSecretValuePolicy: { SecretArn: !Ref SlackWebhookSecret }
       Events:
         Weekdays1800:
           Type: ScheduleV2
           Properties:
             ScheduleExpression: "cron(0 18 ? * MON-FRI *)"
             ScheduleExpressionTimezone: Asia/Tokyo
-            State: !If [IsProd, ENABLED, DISABLED]
+            State: ENABLED # 送るかどうかは、設定画面のオン・オフで決める
 
   WeeklyReportFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub "work-hours-report-${Env}-weekly-report"
       Handler: app.handlers.scheduled.weekly_report
-      Environment:
-        Variables:
-          SLACK_SECRET_ARN: !Ref SlackSecretArn
       Policies:
         - DynamoDBReadPolicy: { TableName: !Ref Table }
-        - !If
-          - HasSlack
-          - AWSSecretsManagerGetSecretValuePolicy: { SecretArn: !Ref SlackSecretArn }
-          - !Ref AWS::NoValue
+        - AWSSecretsManagerGetSecretValuePolicy: { SecretArn: !Ref SlackWebhookSecret }
       Events:
         Monday0900:
           Type: ScheduleV2
           Properties:
             ScheduleExpression: "cron(0 9 ? * MON *)"
             ScheduleExpressionTimezone: Asia/Tokyo
-            State: !If [IsProd, ENABLED, DISABLED]
+            State: ENABLED # 送るかどうかは、設定画面のオン・オフで決める
 
   # --- 監視(アラームを Slack へ) ---
   AlarmTopic:
@@ -208,14 +204,8 @@ Resources:
     Properties:
       FunctionName: !Sub "work-hours-report-${Env}-alarm"
       Handler: app.handlers.scheduled.alarm
-      Environment:
-        Variables:
-          SLACK_SECRET_ARN: !Ref SlackSecretArn
       Policies:
-        - !If
-          - HasSlack
-          - AWSSecretsManagerGetSecretValuePolicy: { SecretArn: !Ref SlackSecretArn }
-          - !Ref AWS::NoValue
+        - AWSSecretsManagerGetSecretValuePolicy: { SecretArn: !Ref SlackWebhookSecret }
       Events:
         Alarm:
           Type: SNS

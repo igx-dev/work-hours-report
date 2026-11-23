@@ -17,6 +17,7 @@ const ADMIN_MENU = [
   { to: '/admin/projects', label: 'プロジェクト管理', short: 'PJ管理', icon: '◫' },
   { to: '/admin/users', label: 'ユーザー管理', short: 'ユーザー', icon: '◎' },
   { to: '/admin/exports', label: 'CSV 出力', short: 'CSV', icon: '⇩' },
+  { to: '/admin/settings', label: '設定', short: '設定', icon: '⚙' },
 ];
 
 export function Layout() {

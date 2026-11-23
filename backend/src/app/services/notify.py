@@ -3,6 +3,8 @@
 from collections.abc import Callable
 from datetime import date, timedelta
 
+from app.services.settings import current as current_settings
+
 WARN_RATE = 0.8
 
 
@@ -16,7 +18,7 @@ class NotifyService:
         self.holidays = holidays
 
     def remind(self, today: date) -> None:
-        if today.isoformat() in self.holidays:
+        if not current_settings(self.repo)["remindEnabled"] or today.isoformat() in self.holidays:
             return
         missing = [m["name"] for m in self.members()
                    if not self.repo.list_reports_for_date(m["userId"], today)]
@@ -25,6 +27,8 @@ class NotifyService:
             self.slack.post(f"今日の日報がまだの人: {names}\n入力はこちら: {self.app_url}/")
 
     def weekly_report(self, today: date) -> None:
+        if not current_settings(self.repo)["weeklyReportEnabled"]:
+            return
         monday = today - timedelta(days=today.weekday() + 7)
         sunday = monday + timedelta(days=6)
         rows = []

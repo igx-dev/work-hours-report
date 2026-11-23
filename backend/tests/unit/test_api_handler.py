@@ -136,3 +136,38 @@ def test_メールアドレスの形が違うと400(directory):
 def test_memberはユーザー管理を使えない(directory):
     status, data = call("GET", "/admin/users", groups="member")
     assert (status, data["code"]) == (403, "FORBIDDEN")
+
+
+@pytest.fixture
+def secrets(monkeypatch, repo):
+    from tests.fakes import FakeSecretStore
+
+    s = FakeSecretStore()
+    monkeypatch.setattr(api, "get_secrets", lambda: s)
+    monkeypatch.setattr(api, "post_to_webhook", lambda url, text: None)
+    return s
+
+
+def test_adminは設定を読み_変え_Slackをつないでテスト送信できる(secrets):
+    status, data = call("GET", "/admin/settings", groups="admin")
+    assert status == 200 and data["slackConfigured"] is False
+
+    status, data = call("PATCH", "/admin/settings", body={"remindEnabled": False}, groups="admin")
+    assert status == 200 and data["remindEnabled"] is False
+
+    url = "https://hooks.slack.com/services/T/B/wxyz"
+    status, data = call("PUT", "/admin/settings/slack-webhook", body={"url": url}, groups="admin")
+    assert status == 200 and data["slackHint"] == "wxyz" and secrets.value == url
+
+    status, _ = call("POST", "/admin/settings/slack-test", groups="admin")
+    assert status == 204
+
+
+def test_オンオフは真偽値でないと400(secrets):
+    status, data = call("PATCH", "/admin/settings", body={"remindEnabled": "no"}, groups="admin")
+    assert (status, data["code"]) == (400, "VALIDATION_ERROR")
+
+
+def test_memberは設定を使えない(secrets):
+    status, data = call("GET", "/admin/settings", groups="member")
+    assert (status, data["code"]) == (403, "FORBIDDEN")

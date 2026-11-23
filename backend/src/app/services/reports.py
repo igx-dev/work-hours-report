@@ -50,13 +50,22 @@ class ReportService:
             raise not_found("日報が見つかりません")
 
     def copy_from_previous(self, user_id, day: date, *, is_admin) -> dict:
+        """直前に日報を出した日の内容で、その日の日報をまるごと置き換える。"""
+        self._check_editable(day, is_admin)
         source = self.repo.latest_report_date_before(user_id, day)
         if source is None:
             raise not_found("複製できる日報がありません")
+        source_reports = self.repo.list_reports_for_date(user_id, source)
+        # 先に全部確かめてから書き換える(途中で失敗して半端にならないように)
+        for r in source_reports:
+            self._active_project(r["projectId"])
+
+        for r in self.repo.list_reports_for_date(user_id, day):
+            self.repo.delete_report(user_id, day, r["projectId"])
         items = [
             self.put(user_id, day, r["projectId"], r["hours"], r.get("note", ""),
                      is_admin=is_admin)
-            for r in self.repo.list_reports_for_date(user_id, source)
+            for r in source_reports
         ]
         return {"sourceDate": source.isoformat(), "items": items}
 

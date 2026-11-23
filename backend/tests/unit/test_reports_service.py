@@ -104,3 +104,22 @@ def test_複製元がなければ404(service):
     with pytest.raises(AppError) as e:
         service.copy_from_previous("u-1", date(2027, 1, 12), is_admin=False)
     assert e.value.code == "NOT_FOUND"
+
+
+def test_複製は_その日の内容を前回の内容にまるごと置き換える(service, repo):
+    put(service, day="2027-01-08", project="p-001", hours=5)
+    put(service, day="2027-01-12", project="p-002", hours=2)
+    service.copy_from_previous("u-1", date(2027, 1, 12), is_admin=False)
+    assert [(r["projectId"], r["hours"]) for r in repo.reports_of("u-1", date(2027, 1, 12))] == [
+        ("p-001", 5)
+    ]
+
+
+def test_複製元に終了したプロジェクトがあれば_何も変えずに422(service, repo):
+    put(service, day="2027-01-08", project="p-001", hours=5)
+    put(service, day="2027-01-12", project="p-002", hours=2)
+    repo.projects["p-001"]["status"] = "CLOSED"
+    with pytest.raises(AppError) as e:
+        service.copy_from_previous("u-1", date(2027, 1, 12), is_admin=False)
+    assert e.value.code == "PROJECT_CLOSED"
+    assert [r["projectId"] for r in repo.reports_of("u-1", date(2027, 1, 12))] == ["p-002"]

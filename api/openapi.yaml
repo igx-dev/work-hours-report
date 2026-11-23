@@ -92,7 +92,7 @@ paths:
       - $ref: "#/components/parameters/DatePath"
     post:
       tags: [me]
-      summary: 直前に日報を出した日の内容を、指定の日に複製する
+      summary: 直前に日報を出した日の内容で、指定の日の日報をまるごと置き換える
       operationId: copyMyReportsFromPrevious
       responses:
         "201":

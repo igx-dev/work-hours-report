@@ -70,7 +70,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 直前に日報を出した日の内容を、指定の日に複製する */
+        /** 直前に日報を出した日の内容で、指定の日の日報をまるごと置き換える */
         post: operations["copyMyReportsFromPrevious"];
         delete?: never;
         options?: never;

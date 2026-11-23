@@ -27,7 +27,7 @@ API の正は [`api/openapi.yaml`](../api/openapi.yaml)(OpenAPI 3.0)。この文
 | GET | `/me/reports?month=2027-01` | 自分の日報(月単位) | member | F-04 |
 | PUT | `/me/reports/{date}/{projectId}` | 日報の登録・上書き | member | F-02 |
 | DELETE | `/me/reports/{date}/{projectId}` | 日報の削除 | member | F-02 |
-| POST | `/me/reports/{date}/copy-from-previous` | 直前の日報を複製 | member | F-03 |
+| POST | `/me/reports/{date}/copy-from-previous` | 直前に出した日の日報で、その日をまるごと置き換える | member | F-03 |
 | GET | `/projects?status=ACTIVE` | プロジェクト一覧 | 全員 | F-02 |
 | POST | `/admin/projects` | プロジェクトの登録 | admin | F-05 |
 | PATCH | `/admin/projects/{projectId}` | プロジェクトの修正・終了 | admin | F-05 |

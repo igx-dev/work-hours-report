@@ -33,5 +33,5 @@ test('日付を押すと、その日を編集できる', async () => {
   const { user } = await renderPage(<ReportsPage />, { data: data() });
   const table = await screen.findByRole('table', { name: '日報の一覧' });
   await user.click(await within(table).findByRole('button', { name: /^.+\/2\(/ }));
-  expect(await screen.findByRole('heading', { name: /\/2\(.\) の日報/ })).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { name: /\/2\(.\)$/ })).toBeInTheDocument();
 });

@@ -4,7 +4,7 @@ import { DayEditor } from '../reports/DayEditor';
 export function TodayPage() {
   return (
     <>
-      <h1>今日</h1>
+      <h1>今日の日報</h1>
       <DayEditor date={todayIso()} />
     </>
   );

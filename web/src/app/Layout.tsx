@@ -9,7 +9,7 @@ import { useAuth } from './AuthContext';
 import { useAppDispatch } from './store';
 
 const MEMBER_MENU = [
-  { to: '/', label: '今日', short: '今日', icon: '✎' },
+  { to: '/', label: '今日の日報', short: '今日の日報', icon: '✎' },
   { to: '/reports', label: '自分の日報', short: '日報', icon: '☰' },
 ];
 const ADMIN_MENU = [

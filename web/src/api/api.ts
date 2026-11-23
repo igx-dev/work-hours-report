@@ -5,7 +5,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { Auth } from '../lib/auth';
 import type {
-  CopyResult,
   MonthReports,
   Project,
   ProjectDashboard,
@@ -53,10 +52,6 @@ export const api = createApi({
       query: ({ date, projectId }) => ({ url: `/me/reports/${date}/${projectId}`, method: 'DELETE' }),
       invalidatesTags: (_r, _e, { date }) => [{ type: 'Reports', id: date.slice(0, 7) }, 'Dashboard'],
     }),
-    copyFromPrevious: b.mutation<CopyResult, string>({
-      query: (date) => ({ url: `/me/reports/${date}/copy-from-previous`, method: 'POST' }),
-      invalidatesTags: (_r, _e, date) => [{ type: 'Reports', id: date.slice(0, 7) }, 'Dashboard'],
-    }),
 
     listProjects: b.query<{ items: Project[] }, ProjectStatus | void>({
       query: (status) => ({ url: '/projects', params: status ? { status } : undefined }),
@@ -90,7 +85,6 @@ export const {
   useListMyReportsQuery,
   usePutMyReportMutation,
   useDeleteMyReportMutation,
-  useCopyFromPreviousMutation,
   useListProjectsQuery,
   useCreateProjectMutation,
   useUpdateProjectMutation,

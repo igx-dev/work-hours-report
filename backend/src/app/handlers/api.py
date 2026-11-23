@@ -143,12 +143,6 @@ def delete_my_report(day: str, project_id: str):
     return Response(status_code=204, body="")
 
 
-@app.post("/me/reports/<day>/copy-from-previous")
-def copy_from_previous(day: str):
-    result = reports().copy_from_previous(user_id(), date_path(day), is_admin=is_admin())
-    return Response(status_code=201, content_type="application/json", body=result)
-
-
 # --- プロジェクト ---
 
 

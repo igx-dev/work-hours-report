@@ -12,7 +12,6 @@ export type User = Schemas['User'];
 export type ApiError = Schemas['Error'];
 
 export type MonthReports = { month: string; items: Report[] };
-export type CopyResult = { sourceDate: string; items: Report[] };
 export type SummaryItem = {
   projectId: string;
   projectName: string;

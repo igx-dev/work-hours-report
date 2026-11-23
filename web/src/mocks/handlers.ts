@@ -73,17 +73,6 @@ export function createHandlers(db: MockDb, base = '/api') {
       return new HttpResponse(null, { status: 204 });
     }),
 
-    http.post(`${base}/me/reports/:date/copy-from-previous`, ({ request, params }) => {
-      const user = me(request)!;
-      const date = params.date as string;
-      const mine = db.reports.filter((r) => r.userId === user.userId && r.date < date);
-      const source = mine.map((r) => r.date).sort().at(-1);
-      if (!source) return err(404, 'NOT_FOUND', '複製できる日報がありません');
-      const copies = mine.filter((r) => r.date === source).map((r) => ({ ...r, date, updatedAt: new Date().toISOString() }));
-      db.reports = [...db.reports.filter((r) => !(r.userId === user.userId && r.date === date)), ...copies];
-      return HttpResponse.json({ sourceDate: source, items: copies.map(strip) }, { status: 201 });
-    }),
-
     http.get(`${base}/projects`, ({ request }) => {
       const status = new URL(request.url).searchParams.get('status');
       return HttpResponse.json({ items: db.projects.filter((p) => !status || p.status === status) });

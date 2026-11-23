@@ -59,25 +59,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/me/reports/{date}/copy-from-previous": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                date: components["parameters"]["DatePath"];
-            };
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** 直前に日報を出した日の内容で、指定の日の日報をまるごと置き換える */
-        post: operations["copyMyReportsFromPrevious"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/projects": {
         parameters: {
             query?: never;
@@ -396,34 +377,6 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-        };
-    };
-    copyMyReportsFromPrevious: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                date: components["parameters"]["DatePath"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 複製した日報 */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        sourceDate: components["schemas"]["Date"];
-                        items: components["schemas"]["Report"][];
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
-            422: components["responses"]["Unprocessable"];
         };
     };
     listProjects: {

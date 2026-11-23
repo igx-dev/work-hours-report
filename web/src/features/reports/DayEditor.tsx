@@ -5,23 +5,20 @@
 import { useState, type FormEvent } from 'react';
 import {
   errorMessage,
-  useCopyFromPreviousMutation,
   useDeleteMyReportMutation,
   useListMyReportsQuery,
   useListProjectsQuery,
   usePutMyReportMutation,
 } from '../../api/api';
-import { addMonths, formatDay } from '../../lib/dates';
+import { formatDay } from '../../lib/dates';
 import { stepHours, validateHours } from '../../lib/hours';
 
 export function DayEditor({ date }: { date: string }) {
   const month = date.slice(0, 7);
   const { data: monthData } = useListMyReportsQuery(month);
-  const { data: prevMonthData } = useListMyReportsQuery(addMonths(month, -1));
   const { data: projects } = useListProjectsQuery('ACTIVE');
   const [putReport, putState] = usePutMyReportMutation();
   const [deleteReport] = useDeleteMyReportMutation();
-  const [copy, copyState] = useCopyFromPreviousMutation();
 
   const [projectId, setProjectId] = useState('');
   const [hoursText, setHoursText] = useState('8');
@@ -32,11 +29,6 @@ export function DayEditor({ date }: { date: string }) {
   const total = reports.reduce((sum, r) => sum + r.hours, 0);
   const selected = projectId || projects?.items[0]?.projectId || '';
 
-  // 写す元: この日より前で、一番新しく日報を出した日(今月と前月の中から探す)
-  const earlier = [...(prevMonthData?.items ?? []), ...(monthData?.items ?? [])].filter((r) => r.date < date);
-  const sourceDate = earlier.map((r) => r.date).sort().at(-1);
-  const sourceReports = earlier.filter((r) => r.date === sourceDate);
-
   async function onSave(e: FormEvent) {
     e.preventDefault();
     const hours = Number(hoursText);
@@ -46,13 +38,6 @@ export function DayEditor({ date }: { date: string }) {
     if ('error' in result) return setMessage({ kind: 'error', text: errorMessage(result.error)! });
     setMessage({ kind: 'info', text: '保存しました' });
     setNote('');
-  }
-
-  async function onCopy() {
-    if (reports.length > 0 && !window.confirm('今日の日報を、写す内容で置き換えます。よろしいですか?')) return;
-    const result = await copy(date);
-    if ('error' in result) return setMessage({ kind: 'error', text: errorMessage(result.error)! });
-    setMessage({ kind: 'info', text: `${formatDay(result.data.sourceDate)} の内容を写しました` });
   }
 
   return (
@@ -83,19 +68,6 @@ export function DayEditor({ date }: { date: string }) {
             ))}
           </ul>
         )}
-        <button
-          type="button"
-          className="secondary wide"
-          onClick={onCopy}
-          disabled={copyState.isLoading || !sourceDate}
-        >
-          前回と同じ内容にする
-        </button>
-        <p className="hint">
-          {sourceDate
-            ? `${formatDay(sourceDate)} の内容(${sourceReports.map((r) => `${r.projectName} ${r.hours}時間`).join('、')})を写します`
-            : '写せる日報がまだありません'}
-        </p>
       </section>
 
       <form className="card" onSubmit={onSave} noValidate>

@@ -87,30 +87,6 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
 
-  /me/reports/{date}/copy-from-previous:
-    parameters:
-      - $ref: "#/components/parameters/DatePath"
-    post:
-      tags: [me]
-      summary: 直前に日報を出した日の内容で、指定の日の日報をまるごと置き換える
-      operationId: copyMyReportsFromPrevious
-      responses:
-        "201":
-          description: 複製した日報
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [sourceDate, items]
-                properties:
-                  sourceDate: { $ref: "#/components/schemas/Date" }
-                  items:
-                    type: array
-                    items: { $ref: "#/components/schemas/Report" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "422": { $ref: "#/components/responses/Unprocessable" }
-
   /projects:
     get:
       tags: [projects]

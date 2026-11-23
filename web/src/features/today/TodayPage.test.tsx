@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react';
 import { db, renderPage } from '../../../tests/render';
 import { emptyDb } from '../../mocks/db';
-import { addMonths, currentMonth, formatDay, todayIso } from '../../lib/dates';
+import { todayIso } from '../../lib/dates';
 import { TodayPage } from './TodayPage';
 
 const TODAY = todayIso();
@@ -67,53 +67,6 @@ test('1日の合計が24時間を超えると、サーバーのエラーを出�
   await user.selectOptions(screen.getByLabelText('プロジェクト'), 'p-002');
   await user.click(screen.getByRole('button', { name: '保存' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('1日の合計が24時間を超えます');
-});
-
-describe('前回と同じ内容にする', () => {
-  const LAST_MONTH_15 = `${addMonths(currentMonth(), -1)}-15`;
-  const source = (projectId: string, projectName: string, hours: number, note = '') => ({
-    userId: 'u-1', date: LAST_MONTH_15, projectId, projectName, hours, note, updatedAt: '',
-  });
-
-  test('押す前に、どの日の何を写すのかが見える', async () => {
-    const data = withProjects();
-    data.reports = [source('p-001', '受発注システム改修', 5), source('p-002', '社内ポータル', 3)];
-    await renderPage(<TodayPage />, { data });
-    expect(
-      await screen.findByText(`${formatDay(LAST_MONTH_15)} の内容(受発注システム改修 5時間、社内ポータル 3時間)を写します`),
-    ).toBeInTheDocument();
-  });
-
-  test('押すと写されて、時間だけ直せる状態になる', async () => {
-    const data = withProjects();
-    data.reports = [source('p-001', '受発注システム改修', 6, '設計')];
-    const { user } = await renderPage(<TodayPage />, { data });
-    await screen.findByText(/を写します$/); // 写す元を読み込むまでは押せない
-    await user.click(screen.getByRole('button', { name: '前回と同じ内容にする' }));
-    expect(await screen.findByText(`${formatDay(LAST_MONTH_15)} の内容を写しました`)).toBeInTheDocument();
-    expect(screen.getByText('合計 6 時間')).toBeInTheDocument();
-  });
-
-  test('今日にもう日報がある時は、上書きしてよいか確かめる', async () => {
-    const data = withProjects();
-    data.reports = [
-      source('p-001', '受発注システム改修', 6),
-      { ...source('p-002', '社内ポータル', 2), date: TODAY },
-    ];
-    const confirm = jest.spyOn(window, 'confirm').mockReturnValue(false);
-    const { user } = await renderPage(<TodayPage />, { data });
-    await screen.findByText(/を写します$/);
-    await user.click(screen.getByRole('button', { name: '前回と同じ内容にする' }));
-    expect(confirm).toHaveBeenCalledWith('今日の日報を、写す内容で置き換えます。よろしいですか?');
-    expect(screen.getByText('合計 2 時間')).toBeInTheDocument(); // やめたので変わらない
-    confirm.mockRestore();
-  });
-
-  test('写せる日報がなければ、ボタンは押せない', async () => {
-    await renderPage(<TodayPage />, { data: withProjects() });
-    expect(await screen.findByText('写せる日報がまだありません')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '前回と同じ内容にする' })).toBeDisabled();
-  });
 });
 
 test('一覧から削除できる', async () => {

@@ -24,16 +24,15 @@ API の正は [`api/openapi.yaml`](../api/openapi.yaml)(OpenAPI 3.0)。この文
 | メソッド | パス | 説明 | ロール | 機能 ID |
 | --- | --- | --- | --- | --- |
 | GET | `/me` | 自分のプロフィール | 全員 | F-01 |
-| GET | `/me/reports?month=2027-01` | 自分の日報(月単位) | member | F-04 |
+| GET | `/me/reports?month=2027-01` | 自分の日報(月単位) | member | F-03 |
 | PUT | `/me/reports/{date}/{projectId}` | 日報の登録・上書き | member | F-02 |
 | DELETE | `/me/reports/{date}/{projectId}` | 日報の削除 | member | F-02 |
-| POST | `/me/reports/{date}/copy-from-previous` | 直前に出した日の日報で、その日をまるごと置き換える | member | F-03 |
 | GET | `/projects?status=ACTIVE` | プロジェクト一覧 | 全員 | F-02 |
-| POST | `/admin/projects` | プロジェクトの登録 | admin | F-05 |
-| PATCH | `/admin/projects/{projectId}` | プロジェクトの修正・終了 | admin | F-05 |
-| GET | `/admin/dashboard/summary?month=2027-01` | 全プロジェクトの月次集計 | admin | F-06, F-07 |
-| GET | `/admin/dashboard/projects/{projectId}?from=2026-10&to=2027-03` | 1プロジェクトの月次推移と内訳 | admin | F-06〜F-08 |
-| GET | `/admin/exports/reports.csv?month=2027-01` | 工数の CSV | admin | F-09 |
+| POST | `/admin/projects` | プロジェクトの登録 | admin | F-04 |
+| PATCH | `/admin/projects/{projectId}` | プロジェクトの修正・終了 | admin | F-04 |
+| GET | `/admin/dashboard/summary?month=2027-01` | 全プロジェクトの月次集計 | admin | F-05, F-06 |
+| GET | `/admin/dashboard/projects/{projectId}?from=2026-10&to=2027-03` | 1プロジェクトの月次推移と内訳 | admin | F-05〜F-07 |
+| GET | `/admin/exports/reports.csv?month=2027-01` | 工数の CSV | admin | F-08 |
 
 ## エラーの形
 

@@ -45,6 +45,13 @@ describe('日付', () => {
     expect(screen.getByLabelText('日付')).toHaveValue('2026-11-01');
   });
 
+  test('「今日」ボタンで今日に戻れる。今日を開いている時は押せない', async () => {
+    const { user } = await renderPage(<EntryPage />, { data: withProjects(), route: '/?date=2026-10-15' });
+    await user.click(screen.getByRole('button', { name: '今日' }));
+    expect(screen.getByLabelText('日付')).toHaveValue(TODAY);
+    expect(screen.getByRole('button', { name: '今日' })).toBeDisabled();
+  });
+
   test('URL の ?date= で日付を指定して開ける', async () => {
     await renderPage(
       <Routes>

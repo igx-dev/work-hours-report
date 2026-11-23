@@ -271,4 +271,6 @@ tr.sum td { font-weight: 700; }
   background: var(--surface);
   font-size: 18px;
 }
+.date-picker .today { width: auto; padding: 0 16px; font-size: 15px; font-weight: 600; color: var(--primary); }
+.date-picker .today:disabled { color: var(--muted); opacity: 1; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

@@ -26,12 +26,10 @@ export function EntryPage() {
           <button type="button" aria-label="次の日" onClick={() => go(addDays(date, 1))}>
             ›
           </button>
-        </div>
-        {date !== todayIso() && (
-          <button type="button" className="link" onClick={() => go(todayIso())}>
-            今日に戻る
+          <button type="button" className="today" onClick={() => go(todayIso())} disabled={date === todayIso()}>
+            今日
           </button>
-        )}
+        </div>
       </div>
       <DayEditor key={date} date={date} />
     </>

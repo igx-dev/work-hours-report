@@ -1,10 +1,13 @@
 version = 0.1
 
-[default.global.parameters]
-region = "ap-northeast-1"
+# 環境ごと(dev / prod)の設定。リージョンはシドニー(docs/02_architecture.md の「環境」)。
 
 [default.build.parameters]
 cached = true
+
+[dev.global.parameters]
+region = "ap-southeast-2"
+profile = "work-hours-report"
 
 [dev.deploy.parameters]
 stack_name = "work-hours-report-dev"
@@ -12,6 +15,10 @@ capabilities = "CAPABILITY_IAM"
 resolve_s3 = true
 parameter_overrides = "Env=dev"
 confirm_changeset = false
+
+[prod.global.parameters]
+region = "ap-southeast-2"
+profile = "work-hours-report"
 
 [prod.deploy.parameters]
 stack_name = "work-hours-report-prod"

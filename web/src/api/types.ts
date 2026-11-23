@@ -26,3 +26,6 @@ export type ProjectMonth = {
   byUser: { userId: string; userName: string; hours: number }[];
 };
 export type ProjectDashboard = { project: Project; months: ProjectMonth[] };
+
+export type Role = 'member' | 'admin';
+export type ManagedUser = { userId: string; name: string; email: string; roles: Role[]; enabled: boolean };

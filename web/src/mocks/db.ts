@@ -5,7 +5,7 @@
 import type { Project, Report } from '../api/types';
 import { addMonths, currentMonth, todayIso } from '../lib/dates';
 
-export type MockUser = { userId: string; name: string; email: string; roles: ('member' | 'admin')[] };
+export type MockUser = { userId: string; name: string; email: string; roles: ('member' | 'admin')[]; enabled?: boolean };
 export type StoredReport = Report & { userId: string };
 
 export type MockDb = { users: MockUser[]; projects: Project[]; reports: StoredReport[] };
@@ -17,7 +17,7 @@ export const USERS: MockUser[] = [
 ];
 
 export function emptyDb(): MockDb {
-  return { users: [...USERS], projects: [], reports: [] };
+  return { users: USERS.map((u) => ({ ...u, roles: [...u.roles] })), projects: [], reports: [] };
 }
 
 /** 見本モード用: プロジェクト3つと、過去3か月分の日報 */

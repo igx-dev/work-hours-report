@@ -25,3 +25,7 @@ export function formatDay(date: string): string {
   const d = new Date(`${date}T00:00:00Z`);
   return `${d.getUTCMonth() + 1}/${d.getUTCDate()}(${WEEKDAYS[d.getUTCDay()]})`;
 }
+
+export function addDays(date: string, delta: number): string {
+  return new Date(Date.parse(`${date}T00:00:00Z`) + delta * 86400000).toISOString().slice(0, 10);
+}

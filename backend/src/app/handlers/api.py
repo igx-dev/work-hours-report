@@ -14,11 +14,13 @@ from aws_lambda_powertools import Logger
 from aws_lambda_powertools.event_handler import APIGatewayRestResolver, CORSConfig, Response
 from aws_lambda_powertools.logging import correlation_paths
 
+from app.clients.cognito import CognitoDirectory
 from app.errors import AppError, forbidden, validation
 from app.repositories.dynamo import DynamoRepo
 from app.services.dashboard import DashboardService
 from app.services.projects import ProjectService
 from app.services.reports import ReportService, _today_jst
+from app.services.users import UserService
 
 logger = Logger(service="api")
 cors = CORSConfig(allow_origin=os.environ.get("APP_URL", "*"), max_age=600)
@@ -27,11 +29,17 @@ app = APIGatewayRestResolver(cors=cors)
 MONTH = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 PROJECT_ID = re.compile(r"^p-[0-9a-z]+$")
 STATUSES = {"ACTIVE", "CLOSED"}
+EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 @cache
 def get_repo():
     return DynamoRepo(boto3.resource("dynamodb").Table(os.environ["TABLE_NAME"]))
+
+
+@cache
+def get_directory():
+    return CognitoDirectory(os.environ["USER_POOL_ID"])
 
 
 def today_jst() -> date:
@@ -216,6 +224,49 @@ def export_csv():
         body=DashboardService(get_repo()).csv(month),
         headers={"Content-Disposition": f'attachment; filename="reports-{month}.csv"'},
     )
+
+
+# --- ユーザー管理 ---
+
+
+def users() -> UserService:
+    return UserService(get_directory(), get_repo())
+
+
+@app.get("/admin/users")
+def list_users():
+    require_admin()
+    return {"items": users().list()}
+
+
+@app.post("/admin/users")
+def create_user():
+    require_admin()
+    data = body()
+    email = text(data, "email", max_length=254)
+    if not EMAIL.match(email):
+        raise validation("メールアドレスの形が違います")
+    user = users().create({"name": text(data, "name", max_length=100), "email": email,
+                           "roles": data.get("roles")})
+    return Response(status_code=201, content_type="application/json", body=user)
+
+
+@app.patch("/admin/users/<target_id>")
+def update_user(target_id: str):
+    require_admin()
+    data = body()
+    changes = {}
+    if "name" in data:
+        changes["name"] = text(data, "name", max_length=100)
+    if "roles" in data:
+        changes["roles"] = data["roles"]
+    if "enabled" in data:
+        if not isinstance(data["enabled"], bool):
+            raise validation("enabled は true か false で指定してください")
+        changes["enabled"] = data["enabled"]
+    if not changes:
+        raise validation("変える項目を1つ以上送ってください")
+    return users().update(user_id(), target_id, changes)
 
 
 # --- エラー ---

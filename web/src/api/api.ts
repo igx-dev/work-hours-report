@@ -7,6 +7,7 @@ import type { Auth } from '../lib/auth';
 import type {
   MonthReports,
   Project,
+  ManagedUser,
   ProjectDashboard,
   ProjectInput,
   ProjectStatus,
@@ -32,7 +33,7 @@ export const api = createApi({
   reducerPath: 'api',
   baseQuery: (args, store, extraOptions) =>
     rawBaseQuery((store.extra as ThunkExtra).apiBaseUrl)(args, store, extraOptions),
-  tagTypes: ['Me', 'Reports', 'Projects', 'Dashboard'],
+  tagTypes: ['Me', 'Reports', 'Projects', 'Dashboard', 'Users'],
   endpoints: (b) => ({
     getMe: b.query<User, void>({ query: () => '/me', providesTags: ['Me'] }),
 
@@ -66,6 +67,16 @@ export const api = createApi({
       invalidatesTags: ['Projects', 'Dashboard'],
     }),
 
+    listUsers: b.query<{ items: ManagedUser[] }, void>({ query: () => '/admin/users', providesTags: ['Users'] }),
+    createUser: b.mutation<ManagedUser, Pick<ManagedUser, 'name' | 'email' | 'roles'>>({
+      query: (body) => ({ url: '/admin/users', method: 'POST', body }),
+      invalidatesTags: ['Users'],
+    }),
+    updateUser: b.mutation<ManagedUser, { userId: string } & Partial<Pick<ManagedUser, 'name' | 'roles' | 'enabled'>>>({
+      query: ({ userId, ...body }) => ({ url: `/admin/users/${userId}`, method: 'PATCH', body }),
+      invalidatesTags: ['Users', 'Dashboard', 'Me'],
+    }),
+
     getSummary: b.query<Summary, string>({
       query: (month) => ({ url: '/admin/dashboard/summary', params: { month } }),
       providesTags: ['Dashboard'],
@@ -88,6 +99,9 @@ export const {
   useListProjectsQuery,
   useCreateProjectMutation,
   useUpdateProjectMutation,
+  useListUsersQuery,
+  useCreateUserMutation,
+  useUpdateUserMutation,
   useGetSummaryQuery,
   useGetProjectDashboardQuery,
 } = api;

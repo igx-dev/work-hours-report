@@ -92,6 +92,31 @@ export function createHandlers(db: MockDb, base = '/api') {
       return HttpResponse.json(project);
     }),
 
+    http.get(`${base}/admin/users`, () =>
+      HttpResponse.json({ items: db.users.map((u) => ({ ...u, enabled: u.enabled !== false })) }),
+    ),
+
+    http.post(`${base}/admin/users`, async ({ request }) => {
+      const body = (await request.json()) as { name: string; email: string; roles: ('member' | 'admin')[] };
+      if (db.users.some((u) => u.email === body.email)) {
+        return err(409, 'ALREADY_EXISTS', 'このメールアドレスは、もう登録されています');
+      }
+      const created = { ...body, userId: `u-${Math.random().toString(36).slice(2, 8)}`, enabled: true };
+      db.users.push(created);
+      return HttpResponse.json(created, { status: 201 });
+    }),
+
+    http.patch(`${base}/admin/users/:userId`, async ({ request, params }) => {
+      const target = db.users.find((u) => u.userId === params.userId);
+      if (!target) return err(404, 'NOT_FOUND', 'ユーザーが見つかりません');
+      const changes = (await request.json()) as Partial<{ name: string; roles: ('member' | 'admin')[]; enabled: boolean }>;
+      const self = me(request)!.userId === target.userId;
+      if (self && changes.roles && !changes.roles.includes('admin')) return err(400, 'VALIDATION_ERROR', '自分の管理者の役割は外せません');
+      if (self && changes.enabled === false) return err(400, 'VALIDATION_ERROR', '自分の利用は止められません');
+      Object.assign(target, changes);
+      return HttpResponse.json({ ...target, enabled: target.enabled !== false });
+    }),
+
     http.get(`${base}/admin/dashboard/summary`, ({ request }) => {
       const month = new URL(request.url).searchParams.get('month') ?? '';
       const items = db.projects.map((p) => {

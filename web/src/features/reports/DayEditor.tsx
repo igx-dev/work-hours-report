@@ -1,5 +1,5 @@
 /**
- * 1日分の日報の編集(「今日の日報」と、「自分の日報」で日付を選んだ時に使う)。
+ * 1日分の日報の編集(「日報入力」の画面で使う)。
  * 左: 登録済みの一覧と「新規追加」。押したものを右で編集する。
  * 右: 新規追加(まだ登録していないプロジェクトから選ぶ)か、選んだ日報の編集。
  */
@@ -12,6 +12,7 @@ import {
   usePutMyReportMutation,
 } from '../../api/api';
 import type { Report } from '../../api/types';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { formatDay } from '../../lib/dates';
 import { stepHours, validateHours } from '../../lib/hours';
 
@@ -29,6 +30,7 @@ export function DayEditor({ date }: { date: string }) {
   const [hoursText, setHoursText] = useState(DEFAULT_HOURS);
   const [note, setNote] = useState('');
   const [message, setMessage] = useState<{ kind: 'error' | 'info'; text: string } | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const reports = (monthData?.items ?? []).filter((r) => r.date === date);
   const total = reports.reduce((sum, r) => sum + r.hours, 0);
@@ -67,6 +69,7 @@ export function DayEditor({ date }: { date: string }) {
 
   async function onDelete() {
     if (mode.kind !== 'edit') return;
+    setConfirmingDelete(false);
     const result = await deleteReport({ date, projectId: mode.report.projectId });
     if ('error' in result) return setMessage({ kind: 'error', text: errorMessage(result.error)! });
     startNew();
@@ -179,11 +182,32 @@ export function DayEditor({ date }: { date: string }) {
           </button>
         )}
         {mode.kind === 'edit' && (
-          <button type="button" className="link danger delete" onClick={onDelete} disabled={deleteState.isLoading}>
+          <button
+            type="button"
+            className="link danger delete"
+            onClick={() => setConfirmingDelete(true)}
+            disabled={deleteState.isLoading}
+          >
             この日報を削除
           </button>
         )}
       </form>
+
+      <ConfirmDialog
+        open={confirmingDelete && mode.kind === 'edit'}
+        title="日報を削除しますか?"
+        confirmLabel="削除する"
+        danger
+        busy={deleteState.isLoading}
+        onConfirm={onDelete}
+        onCancel={() => setConfirmingDelete(false)}
+      >
+        {mode.kind === 'edit' && (
+          <p>
+            {formatDay(date)} の「{mode.report.projectName} {mode.report.hours}時間」を削除します。元に戻せません。
+          </p>
+        )}
+      </ConfirmDialog>
     </div>
   );
 }

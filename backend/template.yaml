@@ -126,8 +126,24 @@ Resources:
     Properties:
       FunctionName: !Sub "work-hours-report-${Env}-api"
       Handler: app.handlers.api.handler
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref UserPool
       Policies:
         - DynamoDBCrudPolicy: { TableName: !Ref Table }
+        - Statement: # ユーザー管理(admin の画面)で使う
+            - Effect: Allow
+              Action:
+                - cognito-idp:ListUsers
+                - cognito-idp:ListUsersInGroup
+                - cognito-idp:AdminCreateUser
+                - cognito-idp:AdminAddUserToGroup
+                - cognito-idp:AdminRemoveUserFromGroup
+                - cognito-idp:AdminUpdateUserAttributes
+                - cognito-idp:AdminDisableUser
+                - cognito-idp:AdminEnableUser
+                - cognito-idp:AdminUserGlobalSignOut
+              Resource: !GetAtt UserPool.Arn
       Events:
         Proxy:
           Type: Api
@@ -147,7 +163,7 @@ Resources:
         - DynamoDBReadPolicy: { TableName: !Ref Table }
         - Statement:
             - Effect: Allow
-              Action: cognito-idp:ListUsersInGroup
+              Action: [cognito-idp:ListUsers, cognito-idp:ListUsersInGroup]
               Resource: !GetAtt UserPool.Arn
         - !If
           - HasSlack

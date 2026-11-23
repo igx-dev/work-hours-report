@@ -1,4 +1,4 @@
-import { addMonths, currentMonth, formatDay, monthLabel, todayIso } from './dates';
+import { addDays, addMonths, currentMonth, formatDay, monthLabel, todayIso } from './dates';
 
 const NOON_JST = new Date('2027-01-12T03:00:00Z'); // 日本時間 12:00
 
@@ -20,4 +20,9 @@ describe('日付の計算', () => {
     expect(monthLabel('2027-01')).toBe('2027年1月');
     expect(formatDay('2027-01-12')).toBe('1/12(火)');
   });
+});
+
+test('日を前後に動かせる(月や年をまたぐ)', () => {
+  expect(addDays('2027-01-01', -1)).toBe('2026-12-31');
+  expect(addDays('2027-02-28', 1)).toBe('2027-03-01');
 });

@@ -64,3 +64,40 @@ class FakeRepo:
         items = [{k: v for k, v in r.items() if k != "userId"}
                  for (u, d, _), r in self.reports.items() if u == user_id and d.startswith(prefix)]
         return sorted(items, key=lambda r: (r["date"], r["projectId"]))
+
+
+class FakeDirectory:
+    """テスト用の偽 Cognito。本物(CognitoDirectory)と同じメソッドを持つ。"""
+
+    def __init__(self):
+        self.users: dict[str, dict] = {}
+        self.invited: list[str] = []
+
+    def add(self, user_id, name, email, roles, enabled=True):
+        self.users[user_id] = {"userId": user_id, "name": name, "email": email,
+                               "roles": list(roles), "enabled": enabled}
+
+    def list_users(self):
+        return [dict(u) for u in self.users.values()]
+
+    def get_user(self, user_id):
+        u = self.users.get(user_id)
+        return dict(u) if u else None
+
+    def find_by_email(self, email):
+        return next((dict(u) for u in self.users.values() if u["email"] == email), None)
+
+    def create_user(self, name, email, roles):
+        user_id = f"u-{len(self.users) + 1}"
+        self.add(user_id, name, email, roles)
+        self.invited.append(email)
+        return dict(self.users[user_id])
+
+    def set_name(self, user_id, name):
+        self.users[user_id]["name"] = name
+
+    def set_roles(self, user_id, roles):
+        self.users[user_id]["roles"] = list(roles)
+
+    def set_enabled(self, user_id, enabled):
+        self.users[user_id]["enabled"] = enabled

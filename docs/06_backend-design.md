@@ -14,7 +14,7 @@
 
 | 関数 | 起動元 | 担当 | DynamoDB の権限 |
 | --- | --- | --- | --- |
-| `api-fn` | API Gateway(全エンドポイント) | 日報、プロジェクト、ダッシュボード、CSV | 読み書き |
+| `api-fn` | API Gateway(全エンドポイント) | 日報、プロジェクト、ダッシュボード、CSV、ユーザー管理 | 読み書き(+ Cognito のユーザーの一覧・招待・変更・停止) |
 | `remind-fn` | EventBridge Scheduler(平日 18:00 JST) | 未提出者を Slack に投稿 | 読み取りのみ(+ Cognito のユーザー一覧) |
 | `weekly-report-fn` | EventBridge Scheduler(月曜 9:00 JST) | 週次レポートを Slack に投稿 | 読み取りのみ |
 | `alarm-fn` | SNS(CloudWatch アラーム) | アラームを Slack に流す | なし |
@@ -66,6 +66,16 @@ backend/
 2. Cognito から member グループのユーザー一覧を取る
 3. 1人ずつ当日の日報があるかを確かめ、ない人の名前を集める
 4. 「今日の日報がまだの人: 山田さん、佐藤さん」と入力画面へのリンクを、Slack のチャンネルに Incoming Webhook で1回投稿する(全員出していれば投稿しない)
+
+### ユーザー管理(`/admin/users`)
+
+- ログインの情報(メールアドレス、役割、利用の可否)は Cognito にだけ持つ。名前は Cognito と、日報の画面やグラフで使うため DynamoDB の User にも書く
+- 招待は Cognito の `AdminCreateUser`。仮のパスワードを書いたメールが Cognito から届き、初めてのログインで本人が新しいパスワードを決める
+- 役割は Cognito のグループ(member / admin)に入れたり外したりする
+- 利用を止める時は `AdminDisableUser` に加えて `AdminUserGlobalSignOut` で、ログイン中の画面からも外す
+- 消すことはしない(過去の日報の名前が分からなくなるため)
+- 自分の管理者の役割は外せず、自分の利用は止められない(管理者がいなくなるのを防ぐ)
+- 未提出者の投稿(`remind-fn`)は、利用を止めた人を数えない
 
 ### 週次レポート(`weekly-report-fn`)
 

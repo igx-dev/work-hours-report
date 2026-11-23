@@ -165,6 +165,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ユーザーの一覧 */
+        get: operations["listUsers"];
+        put?: never;
+        /** ユーザーの招待(仮のパスワードを書いたメールが届く) */
+        post: operations["createUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** 名前・役割の変更、利用の停止と再開(自分の管理者の役割と利用は変えられない) */
+        patch: operations["updateUser"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -184,6 +221,17 @@ export interface components {
             userId: string;
             name: string;
             roles: ("member" | "admin")[];
+        };
+        Roles: ("member" | "admin")[];
+        ManagedUser: {
+            /** @description Cognito の sub */
+            userId: string;
+            name: string;
+            /** Format: email */
+            email: string;
+            roles: components["schemas"]["Roles"];
+            /** @description false なら利用を止めている */
+            enabled: boolean;
         };
         ReportInput: {
             hours: components["schemas"]["Hours"];
@@ -210,7 +258,7 @@ export interface components {
         };
         Error: {
             /** @enum {string} */
-            code: "VALIDATION_ERROR" | "UNAUTHORIZED" | "FORBIDDEN" | "NOT_FOUND" | "DAILY_LIMIT_EXCEEDED" | "PROJECT_CLOSED" | "TOO_MANY_REQUESTS" | "INTERNAL_ERROR";
+            code: "VALIDATION_ERROR" | "UNAUTHORIZED" | "FORBIDDEN" | "NOT_FOUND" | "ALREADY_EXISTS" | "DAILY_LIMIT_EXCEEDED" | "PROJECT_CLOSED" | "TOO_MANY_REQUESTS" | "INTERNAL_ERROR";
             message: string;
             details?: {
                 [key: string]: unknown;
@@ -248,6 +296,15 @@ export interface components {
         };
         /** @description 対象がない */
         NotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description 同じメールアドレスのユーザーがもういる */
+        Conflict: {
             headers: {
                 [name: string]: unknown;
             };
@@ -563,6 +620,97 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    listUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ManagedUser"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    /** Format: email */
+                    email: string;
+                    roles: components["schemas"]["Roles"];
+                };
+            };
+        };
+        responses: {
+            /** @description 招待したユーザー */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedUser"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    roles?: components["schemas"]["Roles"];
+                    enabled?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description 変更したユーザー */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedUser"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
 }

@@ -259,6 +259,83 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
+  /admin/users:
+    get:
+      tags: [admin]
+      summary: ユーザーの一覧
+      operationId: listUsers
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/ManagedUser" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [admin]
+      summary: ユーザーの招待(仮のパスワードを書いたメールが届く)
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, roles]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 100 }
+                email: { type: string, format: email, maxLength: 254 }
+                roles: { $ref: "#/components/schemas/Roles" }
+      responses:
+        "201":
+          description: 招待したユーザー
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ManagedUser" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /admin/users/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema: { type: string }
+    patch:
+      tags: [admin]
+      summary: 名前・役割の変更、利用の停止と再開(自分の管理者の役割と利用は変えられない)
+      operationId: updateUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                name: { type: string, minLength: 1, maxLength: 100 }
+                roles: { $ref: "#/components/schemas/Roles" }
+                enabled: { type: boolean }
+      responses:
+        "200":
+          description: 変更したユーザー
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ManagedUser" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
 components:
   securitySchemes:
     cognito:
@@ -311,6 +388,19 @@ components:
         roles:
           type: array
           items: { type: string, enum: [member, admin] }
+    Roles:
+      type: array
+      minItems: 1
+      items: { type: string, enum: [member, admin] }
+    ManagedUser:
+      type: object
+      required: [userId, name, email, roles, enabled]
+      properties:
+        userId: { type: string, description: Cognito の sub }
+        name: { type: string }
+        email: { type: string, format: email }
+        roles: { $ref: "#/components/schemas/Roles" }
+        enabled: { type: boolean, description: false なら利用を止めている }
     ReportInput:
       type: object
       required: [hours]
@@ -354,6 +444,7 @@ components:
             - UNAUTHORIZED
             - FORBIDDEN
             - NOT_FOUND
+            - ALREADY_EXISTS
             - DAILY_LIMIT_EXCEEDED
             - PROJECT_CLOSED
             - TOO_MANY_REQUESTS
@@ -380,6 +471,11 @@ components:
           schema: { $ref: "#/components/schemas/Error" }
     NotFound:
       description: 対象がない
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Conflict:
+      description: 同じメールアドレスのユーザーがもういる
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }

@@ -9,12 +9,13 @@ import { useAuth } from './AuthContext';
 import { useAppDispatch } from './store';
 
 const MEMBER_MENU = [
-  { to: '/', label: '今日の日報', short: '今日の日報', icon: '✎' },
+  { to: '/', label: '日報入力', short: '入力', icon: '✎' },
   { to: '/reports', label: '自分の日報', short: '日報', icon: '☰' },
 ];
 const ADMIN_MENU = [
   { to: '/dashboard', label: 'ダッシュボード', short: '集計', icon: '▤' },
   { to: '/admin/projects', label: 'プロジェクト管理', short: 'PJ管理', icon: '◫' },
+  { to: '/admin/users', label: 'ユーザー管理', short: 'ユーザー', icon: '◎' },
   { to: '/admin/exports', label: 'CSV 出力', short: 'CSV', icon: '⇩' },
 ];
 

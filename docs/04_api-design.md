@@ -33,6 +33,9 @@ API の正は [`api/openapi.yaml`](../api/openapi.yaml)(OpenAPI 3.0)。この文
 | GET | `/admin/dashboard/summary?month=2027-01` | 全プロジェクトの月次集計 | admin | F-05, F-06 |
 | GET | `/admin/dashboard/projects/{projectId}?from=2026-10&to=2027-03` | 1プロジェクトの月次推移と内訳 | admin | F-05〜F-07 |
 | GET | `/admin/exports/reports.csv?month=2027-01` | 工数の CSV | admin | F-08 |
+| GET | `/admin/users` | ユーザーの一覧 | admin | F-11 |
+| POST | `/admin/users` | ユーザーの招待 | admin | F-11 |
+| PATCH | `/admin/users/{userId}` | 名前・役割の変更、利用の停止と再開 | admin | F-11 |
 
 ## エラーの形
 
@@ -51,7 +54,8 @@ API の正は [`api/openapi.yaml`](../api/openapi.yaml)(OpenAPI 3.0)。この文
 | 400 | `VALIDATION_ERROR` | 形式の誤り(時間が 0.25 単位でないなど) |
 | 401 | `UNAUTHORIZED` | トークンがない、期限切れ |
 | 403 | `FORBIDDEN` | admin でない、締めた月の修正 |
-| 404 | `NOT_FOUND` | 日報やプロジェクトがない |
+| 404 | `NOT_FOUND` | 日報やプロジェクト、ユーザーがない |
+| 409 | `ALREADY_EXISTS` | 同じメールアドレスのユーザーがもういる |
 | 422 | `DAILY_LIMIT_EXCEEDED` | 1日の合計が 24 時間を超える |
 | 422 | `PROJECT_CLOSED` | 終了したプロジェクトへの登録 |
 | 429 | `TOO_MANY_REQUESTS` | API Gateway のスロットリング |

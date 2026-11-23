@@ -102,3 +102,37 @@ def test_CSVはtext_csvで返る(repo):
     status, data = call("GET", "/admin/exports/reports.csv", query={"month": "2027-01"},
                         groups="admin")
     assert status == 200 and "2027-01-12,受発注システム改修,山田 太郎,2," in data
+
+
+@pytest.fixture
+def directory(monkeypatch, repo):
+    from tests.fakes import FakeDirectory
+
+    d = FakeDirectory()
+    d.add("u-1", "山田 太郎", "yamada@example.com", ["member", "admin"])
+    monkeypatch.setattr(api, "get_directory", lambda: d)
+    return d
+
+
+def test_adminはユーザーを一覧_追加_変更できる(directory):
+    status, data = call("GET", "/admin/users", groups="admin")
+    assert status == 200 and data["items"][0]["email"] == "yamada@example.com"
+
+    body = {"name": "佐藤 花子", "email": "sato@example.com", "roles": ["member"]}
+    status, created = call("POST", "/admin/users", body=body, groups="admin")
+    assert status == 201 and created["name"] == "佐藤 花子"
+
+    path = f"/admin/users/{created['userId']}"
+    status, updated = call("PATCH", path, body={"enabled": False}, groups="admin")
+    assert status == 200 and updated["enabled"] is False
+
+
+def test_メールアドレスの形が違うと400(directory):
+    body = {"name": "X", "email": "not-an-email", "roles": ["member"]}
+    status, data = call("POST", "/admin/users", body=body, groups="admin")
+    assert (status, data["code"]) == (400, "VALIDATION_ERROR")
+
+
+def test_memberはユーザー管理を使えない(directory):
+    status, data = call("GET", "/admin/users", groups="member")
+    assert (status, data["code"]) == (403, "FORBIDDEN")

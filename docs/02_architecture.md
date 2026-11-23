@@ -26,6 +26,7 @@ flowchart LR
   web -- ログイン --> cognito
   web -- API 呼び出し --> apigw
   apigw -- トークン検証 --> cognito
+  api -- ユーザー管理 --> cognito
   apigw --> api --> ddb
   sched --> batch
   batch --> ddb
@@ -94,7 +95,7 @@ sequenceDiagram
 | 名前 | 置き場所 | 使う所 |
 | --- | --- | --- |
 | `TABLE_NAME` | Lambda 環境変数(SAM が設定) | 全 Lambda |
-| `USER_POOL_ID` | Lambda 環境変数(SAM が設定) | remind Lambda |
+| `USER_POOL_ID` | Lambda 環境変数(SAM が設定) | api Lambda(ユーザー管理)、remind Lambda |
 | `SLACK_SECRET_ARN` | Lambda 環境変数 → Secrets Manager(Webhook URL) | remind / weekly-report Lambda、アラーム通知 |
 | `APP_URL` | Lambda 環境変数 | remind Lambda(投稿のリンク) |
 | `VITE_API_BASE_URL` | Web のビルド時変数 | Web |

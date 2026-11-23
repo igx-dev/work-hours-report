@@ -1,16 +1,14 @@
-/** 自分の日報(月の一覧)。日付を押すと、その日を編集できる。 */
-import { useState } from 'react';
+/** 自分の日報(月の一覧)。日付を押すと、その日の「日報入力」を開く。 */
+import { Link } from 'react-router';
 import { errorMessage, useListMyReportsQuery } from '../../api/api';
 import type { Report } from '../../api/types';
 import { useAppSelector } from '../../app/store';
 import { MonthPicker } from '../../components/MonthPicker';
 import { formatDay } from '../../lib/dates';
-import { DayEditor } from './DayEditor';
 
 export function ReportsPage() {
   const month = useAppSelector((s) => s.ui.month);
   const { data, isLoading, error } = useListMyReportsQuery(month);
-  const [editing, setEditing] = useState<string | null>(null);
 
   const byDate = new Map<string, Report[]>();
   for (const r of data?.items ?? []) byDate.set(r.date, [...(byDate.get(r.date) ?? []), r]);
@@ -45,9 +43,7 @@ export function ReportsPage() {
               {[...byDate.entries()].map(([date, reports]) => (
                 <tr key={date}>
                   <td>
-                    <button type="button" className="link" onClick={() => setEditing(date)}>
-                      {formatDay(date)}
-                    </button>
+                    <Link to={`/?date=${date}`}>{formatDay(date)}</Link>
                   </td>
                   <td>{reports.map((r) => `${r.projectName} ${r.hours}h`).join(' / ')}</td>
                   <td className="num">{reports.reduce((s, r) => s + r.hours, 0)}</td>
@@ -56,14 +52,6 @@ export function ReportsPage() {
             </tbody>
           </table>
         </div>
-      )}
-      {editing && (
-        <section className="editing">
-          <button type="button" className="link" onClick={() => setEditing(null)}>
-            閉じる
-          </button>
-          <DayEditor key={editing} date={editing} />
-        </section>
       )}
     </>
   );

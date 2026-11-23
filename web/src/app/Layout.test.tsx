@@ -17,7 +17,7 @@ function app() {
 test('member のメニューには、管理者用の項目が出ない', async () => {
   await renderPage(app(), { email: 'yamada@example.com' });
   const nav = await screen.findByRole('navigation', { name: 'メニュー' });
-  expect(nav).toHaveTextContent('今日の日報');
+  expect(nav).toHaveTextContent('日報入力');
   expect(nav).toHaveTextContent('自分の日報');
   expect(nav).not.toHaveTextContent('ダッシュボード');
   expect(screen.getByText('山田 太郎')).toBeInTheDocument();
@@ -28,6 +28,7 @@ test('admin のメニューには、ダッシュボードとプロジェクト�
   const nav = await screen.findByRole('navigation', { name: 'メニュー' });
   expect(nav).toHaveTextContent('ダッシュボード');
   expect(nav).toHaveTextContent('プロジェクト管理');
+  expect(nav).toHaveTextContent('ユーザー管理');
   expect(nav).toHaveTextContent('CSV 出力');
 });
 

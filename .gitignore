@@ -12,3 +12,4 @@ samconfig.local.toml
 !.env.example
 .DS_Store
 !.env.mock
+*.tsbuildinfo

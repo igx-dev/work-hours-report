@@ -1,6 +1,6 @@
 version = 0.1
 
-# 環境ごと(dev / prod)の設定。リージョンはシドニー(docs/02_architecture.md の「環境」)。
+# 環境ごと(dev / prod)の設定。リージョンはシドニー(docs/02_アーキテクチャ.md の「環境」)。
 
 [default.build.parameters]
 cached = true

@@ -1,4 +1,4 @@
-"""日報の入力ルール。docs/01_requirements.md の「入力ルール」をそのままコードにしたもの。"""
+"""日報の入力ルール。docs/01_要件定義.md の「入力ルール」をそのままコードにしたもの。"""
 
 from collections.abc import Iterable
 from datetime import date

@@ -1,4 +1,4 @@
-"""API のエラー。docs/04_api-design.md の「エラーの形」に合わせる。"""
+"""API のエラー。docs/04_API設計.md の「エラーの形」に合わせる。"""
 
 
 class AppError(Exception):

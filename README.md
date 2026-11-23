@@ -45,10 +45,10 @@ Web は、SAM の出力(`ApiUrl`、`UserPoolId`、`UserPoolClientId`)を `web/.e
 
 ## 設計書
 
-1. [要件定義](docs/01_requirements.md)
-2. [アーキテクチャ](docs/02_architecture.md)
-3. [データ設計](docs/03_data-design.md)
-4. [API 設計](docs/04_api-design.md)
-5. [フロントエンド設計](docs/05_frontend-design.md)
-6. [バックエンド設計](docs/06_backend-design.md)
-7. [開発プロセス](docs/07_development-process.md)
+1. [要件定義](docs/01_要件定義.md)
+2. [アーキテクチャ](docs/02_アーキテクチャ.md)
+3. [データ設計](docs/03_データ設計.md)
+4. [API 設計](docs/04_API設計.md)
+5. [フロントエンド設計](docs/05_フロントエンド設計.md)
+6. [バックエンド設計](docs/06_バックエンド設計.md)
+7. [開発プロセス](docs/07_開発プロセス.md)

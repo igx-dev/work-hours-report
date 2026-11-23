@@ -1,4 +1,4 @@
-"""業務ルール(入力ルール)のテスト。docs/01_requirements.md の「入力ルール」に対応する。"""
+"""業務ルール(入力ルール)のテスト。docs/01_要件定義.md の「入力ルール」に対応する。"""
 
 from datetime import date
 

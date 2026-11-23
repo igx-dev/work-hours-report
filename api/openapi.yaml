@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: work-hours-report API
   version: 0.1.0
-  description: 工数日報アプリの API。設計の方針は docs/04_api-design.md を参照。
+  description: 工数日報アプリの API。設計の方針は docs/04_API設計.md を参照。
 servers:
   - url: https://api.dev.example.com/v1
     description: dev(仮の URL)

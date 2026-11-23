@@ -1,4 +1,4 @@
-"""DynamoDB の読み書き。キーの形は docs/03_data-design.md のとおり。"""
+"""DynamoDB の読み書き。キーの形は docs/03_データ設計.md のとおり。"""
 
 from datetime import date
 from decimal import Decimal

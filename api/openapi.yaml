@@ -1,0 +1,414 @@
+openapi: 3.0.3
+info:
+  title: work-hours-report API
+  version: 0.1.0
+  description: 工数日報アプリの API。設計の方針は docs/04_api-design.md を参照。
+servers:
+  - url: https://api.dev.example.com/v1
+    description: dev(仮の URL)
+security:
+  - cognito: []
+
+tags:
+  - name: me
+    description: 自分のプロフィール・日報
+  - name: projects
+    description: プロジェクト
+  - name: admin
+    description: 管理者向け(admin グループのみ)
+
+paths:
+  /me:
+    get:
+      tags: [me]
+      summary: 自分のプロフィール
+      operationId: getMe
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /me/reports:
+    get:
+      tags: [me]
+      summary: 自分の日報(月単位)
+      operationId: listMyReports
+      parameters:
+        - $ref: "#/components/parameters/MonthQuery"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [month, items]
+                properties:
+                  month: { $ref: "#/components/schemas/Month" }
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Report" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /me/reports/{date}/{projectId}:
+    parameters:
+      - $ref: "#/components/parameters/DatePath"
+      - $ref: "#/components/parameters/ProjectIdPath"
+    put:
+      tags: [me]
+      summary: 日報の登録・上書き
+      operationId: putMyReport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReportInput" }
+      responses:
+        "200":
+          description: 登録・上書きした日報
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Report" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+    delete:
+      tags: [me]
+      summary: 日報の削除
+      operationId: deleteMyReport
+      responses:
+        "204": { description: 削除した }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /me/reports/{date}/copy-from-previous:
+    parameters:
+      - $ref: "#/components/parameters/DatePath"
+    post:
+      tags: [me]
+      summary: 直前に日報を出した日の内容を、指定の日に複製する
+      operationId: copyMyReportsFromPrevious
+      responses:
+        "201":
+          description: 複製した日報
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sourceDate, items]
+                properties:
+                  sourceDate: { $ref: "#/components/schemas/Date" }
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Report" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Unprocessable" }
+
+  /projects:
+    get:
+      tags: [projects]
+      summary: プロジェクト一覧
+      operationId: listProjects
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: "#/components/schemas/ProjectStatus" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Project" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /admin/projects:
+    post:
+      tags: [admin]
+      summary: プロジェクトの登録
+      operationId: createProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProjectInput" }
+      responses:
+        "201":
+          description: 登録したプロジェクト
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /admin/projects/{projectId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectIdPath"
+    patch:
+      tags: [admin]
+      summary: プロジェクトの修正・終了
+      operationId: updateProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                name: { type: string, minLength: 1, maxLength: 100 }
+                plannedHours: { type: number, minimum: 0, multipleOf: 0.25 }
+                startDate: { $ref: "#/components/schemas/Date" }
+                endDate: { $ref: "#/components/schemas/Date" }
+                status: { $ref: "#/components/schemas/ProjectStatus" }
+      responses:
+        "200":
+          description: 修正したプロジェクト
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /admin/dashboard/summary:
+    get:
+      tags: [admin]
+      summary: 全プロジェクトの月次集計
+      operationId: getDashboardSummary
+      parameters:
+        - $ref: "#/components/parameters/MonthQuery"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [month, items]
+                properties:
+                  month: { $ref: "#/components/schemas/Month" }
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [projectId, projectName, plannedHours, actualHoursToDate, monthHours]
+                      properties:
+                        projectId: { type: string }
+                        projectName: { type: string }
+                        plannedHours: { type: number }
+                        actualHoursToDate:
+                          type: number
+                          description: プロジェクト開始からその月末までの累計
+                        monthHours:
+                          type: number
+                          description: その月の合計
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /admin/dashboard/projects/{projectId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectIdPath"
+    get:
+      tags: [admin]
+      summary: 1プロジェクトの月次推移とメンバー別内訳
+      operationId: getProjectDashboard
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema: { $ref: "#/components/schemas/Month" }
+        - name: to
+          in: query
+          required: true
+          schema: { $ref: "#/components/schemas/Month" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [project, months]
+                properties:
+                  project: { $ref: "#/components/schemas/Project" }
+                  months:
+                    type: array
+                    items:
+                      type: object
+                      required: [month, totalHours, byUser]
+                      properties:
+                        month: { $ref: "#/components/schemas/Month" }
+                        totalHours: { type: number }
+                        byUser:
+                          type: array
+                          items:
+                            type: object
+                            required: [userId, userName, hours]
+                            properties:
+                              userId: { type: string }
+                              userName: { type: string }
+                              hours: { type: number }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /admin/exports/reports.csv:
+    get:
+      tags: [admin]
+      summary: 工数の CSV(月単位)
+      operationId: exportReportsCsv
+      parameters:
+        - $ref: "#/components/parameters/MonthQuery"
+      responses:
+        "200":
+          description: 列は 日付, プロジェクト, メンバー, 時間, メモ(UTF-8、BOM 付き)
+          content:
+            text/csv:
+              schema: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+components:
+  securitySchemes:
+    cognito:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Cognito の ID トークン
+
+  parameters:
+    MonthQuery:
+      name: month
+      in: query
+      required: true
+      schema: { $ref: "#/components/schemas/Month" }
+    DatePath:
+      name: date
+      in: path
+      required: true
+      schema: { $ref: "#/components/schemas/Date" }
+    ProjectIdPath:
+      name: projectId
+      in: path
+      required: true
+      schema: { type: string, pattern: "^p-[0-9a-z]+$" }
+
+  schemas:
+    Date:
+      type: string
+      format: date
+      example: "2027-01-12"
+    Month:
+      type: string
+      pattern: "^[0-9]{4}-(0[1-9]|1[0-2])$"
+      example: "2027-01"
+    Hours:
+      type: number
+      minimum: 0.25
+      maximum: 24
+      multipleOf: 0.25
+      example: 3.5
+    ProjectStatus:
+      type: string
+      enum: [ACTIVE, CLOSED]
+    User:
+      type: object
+      required: [userId, name, roles]
+      properties:
+        userId: { type: string }
+        name: { type: string }
+        roles:
+          type: array
+          items: { type: string, enum: [member, admin] }
+    ReportInput:
+      type: object
+      required: [hours]
+      properties:
+        hours: { $ref: "#/components/schemas/Hours" }
+        note: { type: string, maxLength: 500 }
+    Report:
+      type: object
+      required: [date, projectId, projectName, hours, updatedAt]
+      properties:
+        date: { $ref: "#/components/schemas/Date" }
+        projectId: { type: string }
+        projectName: { type: string }
+        hours: { $ref: "#/components/schemas/Hours" }
+        note: { type: string }
+        updatedAt: { type: string, format: date-time }
+    ProjectInput:
+      type: object
+      required: [name, plannedHours, startDate, endDate]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        plannedHours: { type: number, minimum: 0, multipleOf: 0.25 }
+        startDate: { $ref: "#/components/schemas/Date" }
+        endDate: { $ref: "#/components/schemas/Date" }
+    Project:
+      allOf:
+        - $ref: "#/components/schemas/ProjectInput"
+        - type: object
+          required: [projectId, status]
+          properties:
+            projectId: { type: string }
+            status: { $ref: "#/components/schemas/ProjectStatus" }
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          enum:
+            - VALIDATION_ERROR
+            - UNAUTHORIZED
+            - FORBIDDEN
+            - NOT_FOUND
+            - DAILY_LIMIT_EXCEEDED
+            - PROJECT_CLOSED
+            - TOO_MANY_REQUESTS
+            - INTERNAL_ERROR
+        message: { type: string }
+        details: { type: object, additionalProperties: true }
+        correlationId: { type: string }
+
+  responses:
+    BadRequest:
+      description: 形式の誤り
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: トークンがない、期限切れ
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Forbidden:
+      description: 権限がない、締めた月
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: 対象がない
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unprocessable:
+      description: 1日の合計が24時間を超える、終了したプロジェクト
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }

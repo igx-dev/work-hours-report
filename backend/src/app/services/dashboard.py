@@ -27,8 +27,13 @@ class DashboardService:
     def summary(self, month: str) -> dict:
         items = []
         for project in self.repo.list_projects():
-            reports = self.repo.list_project_reports(
-                project["projectId"], project["startDate"], f"{month}-31")
+            month_end = f"{month}-31"
+            reports = (
+                self.repo.list_project_reports(
+                    project["projectId"], project["startDate"], month_end)
+                if project["startDate"] <= month_end
+                else []  # その月の終わりまでに、まだ始まっていない
+            )
             items.append({
                 "projectId": project["projectId"],
                 "projectName": project["name"],

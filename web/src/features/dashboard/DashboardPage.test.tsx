@@ -1,4 +1,5 @@
 import { screen, within } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { renderPage } from '../../../tests/render';
 import { emptyDb } from '../../mocks/db';
 import { currentMonth } from '../../lib/dates';
@@ -46,4 +47,12 @@ test('プロジェクト詳細では、メンバー別の内訳が表で読め�
   const table = await screen.findByRole('table', { name: 'メンバー別の内訳' });
   expect(within(table).getByText('佐藤 次郎')).toBeInTheDocument();
   expect(within(table).getByText('16')).toBeInTheDocument();
+});
+
+test('読み込みに失敗したら、そう伝える', async () => {
+  const fail = http.get('*/admin/dashboard/summary', () =>
+    HttpResponse.json({ code: 'INTERNAL_ERROR', message: '想定外のエラーです' }, { status: 500 }),
+  );
+  await renderPage(<DashboardPage />, { email: 'admin@example.com', data: data(), extraHandlers: [fail] });
+  expect(await screen.findByRole('alert')).toHaveTextContent('想定外のエラーです');
 });

@@ -1,6 +1,6 @@
 /** ダッシュボード: 全プロジェクトの予定と実績(累計)と、その月の時間。 */
 import { Link } from 'react-router';
-import { useGetSummaryQuery } from '../../api/api';
+import { errorMessage, useGetSummaryQuery } from '../../api/api';
 import { useAppSelector } from '../../app/store';
 import { Chart, COLORS } from '../../components/Chart';
 import { MonthPicker } from '../../components/MonthPicker';
@@ -10,7 +10,7 @@ const rate = (actual: number, planned: number) => (planned ? Math.round((actual 
 
 export function DashboardPage() {
   const month = useAppSelector((s) => s.ui.month);
-  const { data, isLoading } = useGetSummaryQuery(month);
+  const { data, isLoading, error } = useGetSummaryQuery(month);
   const items = data?.items ?? [];
 
   return (
@@ -22,6 +22,10 @@ export function DashboardPage() {
       </div>
       {isLoading ? (
         <p className="muted">読み込み中…</p>
+      ) : error ? (
+        <p role="alert" className="error">
+          {errorMessage(error)}
+        </p>
       ) : items.length === 0 ? (
         <p className="muted">プロジェクトがありません</p>
       ) : (

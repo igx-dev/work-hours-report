@@ -1,6 +1,6 @@
 /** 自分の日報(月の一覧)。日付を押すと、その日を編集できる。 */
 import { useState } from 'react';
-import { useListMyReportsQuery } from '../../api/api';
+import { errorMessage, useListMyReportsQuery } from '../../api/api';
 import type { Report } from '../../api/types';
 import { useAppSelector } from '../../app/store';
 import { MonthPicker } from '../../components/MonthPicker';
@@ -9,7 +9,7 @@ import { DayEditor } from './DayEditor';
 
 export function ReportsPage() {
   const month = useAppSelector((s) => s.ui.month);
-  const { data, isLoading } = useListMyReportsQuery(month);
+  const { data, isLoading, error } = useListMyReportsQuery(month);
   const [editing, setEditing] = useState<string | null>(null);
 
   const byDate = new Map<string, Report[]>();
@@ -25,6 +25,10 @@ export function ReportsPage() {
       </div>
       {isLoading ? (
         <p className="muted">読み込み中…</p>
+      ) : error ? (
+        <p role="alert" className="error">
+          {errorMessage(error)}
+        </p>
       ) : byDate.size === 0 ? (
         <p className="muted">この月の日報はありません</p>
       ) : (

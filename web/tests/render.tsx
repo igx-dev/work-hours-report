@@ -1,6 +1,7 @@
 /** テスト用: 見本の API(MSW)とログイン済みの状態を用意して、画面を描く。 */
 import { render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { RequestHandler } from 'msw';
 import { setupServer } from 'msw/node';
 import type { ReactElement } from 'react';
 import { Provider } from 'react-redux';
@@ -21,10 +22,15 @@ afterAll(() => server.close());
 
 export async function renderPage(
   ui: ReactElement,
-  { route = '/', email = 'yamada@example.com', data }: { route?: string; email?: string | null; data?: MockDb } = {},
+  {
+    route = '/',
+    email = 'yamada@example.com',
+    data,
+    extraHandlers = [],
+  }: { route?: string; email?: string | null; data?: MockDb; extraHandlers?: RequestHandler[] } = {},
 ) {
   db.current = data ?? emptyDb();
-  server.use(...createHandlers(db.current, BASE));
+  server.use(...extraHandlers, ...createHandlers(db.current, BASE));
   const auth = createMockAuth();
   await auth.signOut();
   if (email) await auth.signIn(email, 'x');

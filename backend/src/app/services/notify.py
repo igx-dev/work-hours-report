@@ -29,8 +29,12 @@ class NotifyService:
         sunday = monday + timedelta(days=6)
         rows = []
         for project in self.repo.list_projects("ACTIVE"):
-            reports = self.repo.list_project_reports(
-                project["projectId"], project["startDate"], sunday.isoformat())
+            reports = (
+                self.repo.list_project_reports(
+                    project["projectId"], project["startDate"], sunday.isoformat())
+                if project["startDate"] <= sunday.isoformat()
+                else []  # 先週の終わりまでに、まだ始まっていない
+            )
             week = sum(r["hours"] for r in reports if r["date"] >= monday.isoformat())
             total = sum(r["hours"] for r in reports)
             rate = total / project["plannedHours"] if project["plannedHours"] else 0

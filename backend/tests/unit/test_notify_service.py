@@ -71,3 +71,10 @@ def test_週次レポートは先週の合計と消化率_80パーセントを�
         "⚠️ 社内ポータル: 34時間(予定の85%)\n"
         "・受発注システム改修: 10時間(予定の18%)"
     ]
+
+
+def test_週次レポートは_まだ始まっていないプロジェクトを0時間で出す(repo):
+    repo.add_project("p-003", "これから始まる", planned=10, start="2027-02-01")
+    slack = FakeSlack()
+    service(repo, slack).weekly_report(date(2027, 1, 18))
+    assert "・これから始まる: 0時間(予定の0%)" in slack.posts[0]

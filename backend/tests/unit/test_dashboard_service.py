@@ -78,3 +78,12 @@ def test_CSVは日付_プロジェクト_メンバー_時間_メモの列でBOM�
         "2027-01-08,受発注システム改修,佐藤 花子,2.5,",
         "2027-01-09,社内ポータル,佐藤 花子,4,",
     ]
+
+
+def test_まだ始まっていないプロジェクトは_その月は0時間で並ぶ(repo):
+    summary = DashboardService(repo).summary("2026-11")
+    rows = [(i["projectId"], i["actualHoursToDate"], i["monthHours"]) for i in summary["items"]]
+    assert rows == [
+        ("p-001", 0, 0),
+        ("p-002", 0, 0),
+    ]

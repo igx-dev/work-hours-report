@@ -54,6 +54,8 @@ class FakeRepo:
         return date.fromisoformat(max(dates)) if dates else None
 
     def list_project_reports(self, project_id, from_date: str, to_date: str):
+        if from_date > to_date:  # 本物の DynamoDB と同じく、逆さまの範囲はエラーにする
+            raise ValueError("from_date が to_date より後です")
         items = [r for (_, d, p), r in self.reports.items()
                  if p == project_id and from_date <= d <= to_date]
         return sorted(items, key=lambda r: (r["date"], r["userId"]))

@@ -14,8 +14,34 @@ AWS 上のサーバーレス構成(API Gateway + Lambda + DynamoDB)で動く。�
 | --- | --- |
 | `docs/` | 設計書 |
 | `api/` | API 仕様書(OpenAPI) |
-| `web/` | Web 画面(React + TypeScript)※未作成 |
-| `backend/` | Lambda 関数(Python)と IaC(AWS SAM)※未作成 |
+| `web/` | Web 画面(React + TypeScript) |
+| `backend/` | Lambda 関数(Python)と IaC(AWS SAM) |
+
+## 手元で動かす
+
+画面は「見本モード」で、AWS につながずに動かせる(ブラウザの中の見本データを使う)。メールアドレスが `admin` で始まれば管理者、それ以外は作業者としてログインできる(パスワードは何でもよい)。
+
+```bash
+cd web && npm install && npm run dev:mock
+```
+
+テスト:
+
+```bash
+cd web && npm test
+```
+
+```bash
+cd backend && python3.12 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt && .venv/bin/pytest
+```
+
+## デプロイ
+
+```bash
+cd backend && sam build && sam deploy --config-env dev
+```
+
+Web は、SAM の出力(`ApiUrl`、`UserPoolId`、`UserPoolClientId`)を `web/.env.production.local` に書いて `npm run build` し、`dist/` を出力の `WebBucketName` の S3 バケットに置く。
 
 ## 設計書
 

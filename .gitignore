@@ -11,3 +11,4 @@ samconfig.local.toml
 .env.*
 !.env.example
 .DS_Store
+!.env.mock

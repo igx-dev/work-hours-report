@@ -14,7 +14,7 @@
 | API の型 | `api/openapi.yaml` から `openapi-typescript` で生成 |
 | 認証 | Amplify Auth(Cognito) |
 | グラフ | Highcharts(`highcharts-react-official`) |
-| テスト | Jest + Testing Library。API は MSW でモックする |
+| テスト | Jest + Testing Library。API は MSW でモックする(`src/mocks/` の見本の API を、テストと見本モードで共用する) |
 | Lint / 整形 | ESLint + Prettier |
 | 配信 | S3 + CloudFront。どのパスも `index.html` を返す設定にする |
 
@@ -77,7 +77,16 @@ web/
 │   ├── app/            store、ルーティング
 │   ├── api/            生成した型と RTK Query の定義
 │   ├── features/       画面ごと(today, reports, dashboard, projects, exports)
-│   ├── components/     共通の部品(ボタン、入力欄、グラフの枠)
-│   └── lib/            日付の計算、入力チェック
-└── tests/
+│   ├── components/     共通の部品(月の切り替え、グラフの枠)
+│   ├── lib/            日付の計算、入力チェック、ログインの窓口
+│   └── mocks/          見本の API(MSW)と見本データ
+└── tests/              テストの準備(画面を描く関数、Highcharts の代わり)
 ```
+
+## 見本モード
+
+`npm run dev:mock` で、AWS につながずに画面を動かせる。API は MSW がブラウザの中で受け、`src/mocks/` の見本データを返す。ログインも見本(メールアドレスが `admin` で始まれば管理者)。画面の確認と、デモのためのもの。
+
+## ログイン
+
+Cognito のユーザーは管理者が作る(自分で登録はできない)。初めてログインした時は仮のパスワードなので、画面で新しいパスワードを決めてもらう。ログインの処理は `lib/auth.ts` の形(`Auth`)にそろえ、本物(Amplify)と見本を差し替えられるようにしている。テストでは見本を使う。

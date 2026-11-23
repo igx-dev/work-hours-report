@@ -1,14 +1,22 @@
-/** 自分の日報(月の一覧)。日付を押すと、その日の「日報入力」を開く。 */
-import { Link } from 'react-router';
+/** 自分の日報(月の一覧)。日付を押すと、下にその日の編集が出る(日報入力と同じ部品)。 */
+import { useEffect, useRef, useState } from 'react';
 import { errorMessage, useListMyReportsQuery } from '../../api/api';
 import type { Report } from '../../api/types';
 import { useAppSelector } from '../../app/store';
 import { MonthPicker } from '../../components/MonthPicker';
 import { formatDay } from '../../lib/dates';
+import { DayEditor } from './DayEditor';
 
 export function ReportsPage() {
   const month = useAppSelector((s) => s.ui.month);
   const { data, isLoading, error } = useListMyReportsQuery(month);
+  const [editing, setEditing] = useState<string | null>(null);
+  const editorRef = useRef<HTMLElement>(null);
+
+  // 日付を押したら、下に出た編集の欄まで動かす
+  useEffect(() => {
+    if (editing) editorRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  }, [editing]);
 
   const byDate = new Map<string, Report[]>();
   for (const r of data?.items ?? []) byDate.set(r.date, [...(byDate.get(r.date) ?? []), r]);
@@ -43,7 +51,9 @@ export function ReportsPage() {
               {[...byDate.entries()].map(([date, reports]) => (
                 <tr key={date}>
                   <td>
-                    <Link to={`/?date=${date}`}>{formatDay(date)}</Link>
+                    <button type="button" className="link" onClick={() => setEditing(date)}>
+                      {formatDay(date)}
+                    </button>
                   </td>
                   <td>{reports.map((r) => `${r.projectName} ${r.hours}h`).join(' / ')}</td>
                   <td className="num">{reports.reduce((s, r) => s + r.hours, 0)}</td>
@@ -52,6 +62,14 @@ export function ReportsPage() {
             </tbody>
           </table>
         </div>
+      )}
+      {editing && (
+        <section className="editing" ref={editorRef}>
+          <button type="button" className="link" onClick={() => setEditing(null)}>
+            閉じる
+          </button>
+          <DayEditor key={editing} date={editing} />
+        </section>
       )}
     </>
   );

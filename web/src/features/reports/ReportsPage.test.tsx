@@ -2,7 +2,6 @@ import { screen, within } from '@testing-library/react';
 import { renderPage } from '../../../tests/render';
 import { emptyDb } from '../../mocks/db';
 import { addMonths, currentMonth } from '../../lib/dates';
-import { Route, Routes, useLocation } from 'react-router';
 import { ReportsPage } from './ReportsPage';
 
 const THIS = currentMonth();
@@ -30,20 +29,9 @@ test('前の月に切り替えられる', async () => {
   expect(await screen.findByText('月の合計 7 時間')).toBeInTheDocument();
 });
 
-test('日付を押すと、その日の「日報入力」を開く', async () => {
-  const { user } = await renderPage(
-    <Routes>
-      <Route path="/reports" element={<ReportsPage />} />
-      <Route path="/" element={<LocationProbe />} />
-    </Routes>,
-    { data: data(), route: '/reports' },
-  );
+test('日付を押すと、その日を編集できる', async () => {
+  const { user } = await renderPage(<ReportsPage />, { data: data() });
   const table = await screen.findByRole('table', { name: '日報の一覧' });
-  await user.click(await within(table).findByRole('link', { name: /^.+\/2\(/ }));
-  expect(await screen.findByTestId('location')).toHaveTextContent(`?date=${THIS}-02`);
+  await user.click(await within(table).findByRole('button', { name: /^.+\/2\(/ }));
+  expect(await screen.findByRole('heading', { name: /\/2\(.\)$/ })).toBeInTheDocument();
 });
-
-function LocationProbe() {
-  const location = useLocation();
-  return <p data-testid="location">{location.search}</p>;
-}

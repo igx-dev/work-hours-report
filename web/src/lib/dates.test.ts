@@ -1,4 +1,4 @@
-import { addDays, addMonths, currentMonth, formatDay, monthLabel, todayIso } from './dates';
+import { addDays, addMonths, daysInMonth, isWeekend, currentMonth, formatDay, monthLabel, todayIso } from './dates';
 
 const NOON_JST = new Date('2027-01-12T03:00:00Z'); // 日本時間 12:00
 
@@ -25,4 +25,12 @@ describe('日付の計算', () => {
 test('日を前後に動かせる(月や年をまたぐ)', () => {
   expect(addDays('2027-01-01', -1)).toBe('2026-12-31');
   expect(addDays('2027-02-28', 1)).toBe('2027-03-01');
+});
+
+test('月の全部の日と、土日の見分け', () => {
+  expect(daysInMonth('2027-02')).toHaveLength(28);
+  expect(daysInMonth('2028-02').at(-1)).toBe('2028-02-29');
+  expect(daysInMonth('2027-01')[0]).toBe('2027-01-01');
+  expect(isWeekend('2027-01-09')).toBe(true); // 土曜
+  expect(isWeekend('2027-01-11')).toBe(false); // 月曜
 });

@@ -167,6 +167,10 @@ th { font-size: 13px; color: var(--muted); font-weight: 600; background: #fafbfc
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 tr:last-child td { border-bottom: none; }
 tr.sum td { font-weight: 700; }
+tr.weekend td { background: #fafbfc; }
+tr.weekend td, tr.weekend .muted { color: #9aa5ae; }
+tr.weekend .link { color: #7d97a6; }
+tr.selected td { background: var(--ok-bg); }
 
 .badge {
   display: inline-block;

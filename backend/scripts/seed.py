@@ -1,9 +1,10 @@
 """見本のデータを入れる(dev 用)。プロジェクト3つと、メンバー3人の過去3か月分の日報。
 
 使い方:
-    TABLE_NAME=work-hours-report-dev python scripts/seed.py <member1の userId> <member2> <member3>
+    TABLE_NAME=work-hours-report-dev python scripts/seed.py < users.txt
 
-userId は Cognito のユーザーの sub。ユーザーは AWS のコンソールか CLI で先に作っておく。
+users.txt は1行に1人、「userId|名前」の形。userId は Cognito のユーザーの sub。
+ユーザーは AWS のコンソールか CLI で先に作っておく。
 """
 
 import random
@@ -16,23 +17,23 @@ sys.path.insert(0, "src")
 from app.repositories.dynamo import DynamoRepo  # noqa: E402
 
 PROJECTS = [
-    ("p-order", "受発注システム改修", 480, "2026-09-01", "2027-02-28"),
-    ("p-portal", "社内ポータル", 160, "2026-10-01", "2027-01-31"),
-    ("p-stock", "在庫の見える化", 240, "2026-11-01", "2027-04-30"),
+    ("p-order", "受発注システム改修", 1000, "2026-09-01", "2027-02-28"),
+    ("p-portal", "社内ポータル", 350, "2026-10-01", "2027-01-31"),
+    ("p-stock", "在庫の見える化", 400, "2026-11-01", "2027-04-30"),
 ]
-NAMES = ["山田 太郎", "佐藤 花子", "鈴木 一郎"]
 NOTES = ["画面設計", "レビュー", "打ち合わせ", "テスト", "不具合の修正", ""]
 
 
-def main(user_ids: list[str]) -> None:
+def main(users: list[tuple[str, str]]) -> None:
     import os
 
     repo = DynamoRepo(boto3.resource("dynamodb").Table(os.environ["TABLE_NAME"]))
     for pid, name, planned, start, end in PROJECTS:
         repo.put_project({"projectId": pid, "name": name, "plannedHours": planned,
                           "startDate": start, "endDate": end, "status": "ACTIVE"})
-    for user_id, name in zip(user_ids, NAMES, strict=False):
+    for user_id, name in users:
         repo.put_user({"userId": user_id, "name": name})
+    user_ids = [user_id for user_id, _ in users]
 
     rng = random.Random(42)
     today = date.today()
@@ -55,4 +56,4 @@ def main(user_ids: list[str]) -> None:
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main([tuple(line.strip().split("|", 1)) for line in sys.stdin if line.strip()])

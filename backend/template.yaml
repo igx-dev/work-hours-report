@@ -1,0 +1,309 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: work-hours-report (工数日報アプリ)。API、データ、ログイン、定期処理、Web の配信。
+
+Parameters:
+  Env:
+    Type: String
+    AllowedValues: [dev, prod]
+  SlackSecretArn:
+    Type: String
+    Default: ""
+    Description: Slack の Webhook URL を入れた Secrets Manager の ARN(空なら投稿しない)
+
+Conditions:
+  IsProd: !Equals [!Ref Env, prod]
+  HasSlack: !Not [!Equals [!Ref SlackSecretArn, ""]]
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Architectures: [arm64]
+    CodeUri: src/
+    MemorySize: 256
+    Timeout: 10
+    LoggingConfig:
+      LogFormat: JSON
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref Table
+        APP_URL: !Sub "https://${Distribution.DomainName}"
+        POWERTOOLS_SERVICE_NAME: work-hours-report
+
+Resources:
+  # --- データ ---
+  Table:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      TableName: !Sub "work-hours-report-${Env}"
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - { AttributeName: PK, AttributeType: S }
+        - { AttributeName: SK, AttributeType: S }
+        - { AttributeName: GSI1PK, AttributeType: S }
+        - { AttributeName: GSI1SK, AttributeType: S }
+      KeySchema:
+        - { AttributeName: PK, KeyType: HASH }
+        - { AttributeName: SK, KeyType: RANGE }
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - { AttributeName: GSI1PK, KeyType: HASH }
+            - { AttributeName: GSI1SK, KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+
+  # --- ログイン ---
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub "work-hours-report-${Env}"
+      UsernameAttributes: [email]
+      AutoVerifiedAttributes: [email]
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true # 自分で登録はできない。管理者が作る
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 12
+          RequireLowercase: true
+          RequireUppercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+      Schema:
+        - { Name: name, AttributeDataType: String, Required: true, Mutable: true }
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows: [ALLOW_USER_SRP_AUTH, ALLOW_REFRESH_TOKEN_AUTH]
+      PreventUserExistenceErrors: ENABLED
+
+  AdminGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties: { UserPoolId: !Ref UserPool, GroupName: admin }
+
+  MemberGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties: { UserPoolId: !Ref UserPool, GroupName: member }
+
+  # --- API ---
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub "work-hours-report-${Env}"
+      StageName: v1
+      Auth:
+        DefaultAuthorizer: Cognito
+        AddDefaultAuthorizerToCorsPreflight: false
+        Authorizers:
+          Cognito:
+            UserPoolArn: !GetAtt UserPool.Arn
+      Cors:
+        AllowOrigin: !Sub "'https://${Distribution.DomainName}'"
+        AllowHeaders: "'Authorization,Content-Type'"
+        AllowMethods: "'GET,PUT,POST,PATCH,DELETE,OPTIONS'"
+      GatewayResponses:
+        DEFAULT_4XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: !Sub "'https://${Distribution.DomainName}'"
+        DEFAULT_5XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: !Sub "'https://${Distribution.DomainName}'"
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          ThrottlingRateLimit: 10
+          ThrottlingBurstLimit: 20
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "work-hours-report-${Env}-api"
+      Handler: app.handlers.api.handler
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref Table }
+      Events:
+        Proxy:
+          Type: Api
+          Properties: { RestApiId: !Ref Api, Path: "/{proxy+}", Method: ANY }
+
+  # --- 定期処理(日本時間) ---
+  RemindFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "work-hours-report-${Env}-remind"
+      Handler: app.handlers.scheduled.remind
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref UserPool
+          SLACK_SECRET_ARN: !Ref SlackSecretArn
+      Policies:
+        - DynamoDBReadPolicy: { TableName: !Ref Table }
+        - Statement:
+            - Effect: Allow
+              Action: cognito-idp:ListUsersInGroup
+              Resource: !GetAtt UserPool.Arn
+        - !If
+          - HasSlack
+          - AWSSecretsManagerGetSecretValuePolicy: { SecretArn: !Ref SlackSecretArn }
+          - !Ref AWS::NoValue
+      Events:
+        Weekdays1800:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: "cron(0 18 ? * MON-FRI *)"
+            ScheduleExpressionTimezone: Asia/Tokyo
+            State: !If [IsProd, ENABLED, DISABLED]
+
+  WeeklyReportFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "work-hours-report-${Env}-weekly-report"
+      Handler: app.handlers.scheduled.weekly_report
+      Environment:
+        Variables:
+          SLACK_SECRET_ARN: !Ref SlackSecretArn
+      Policies:
+        - DynamoDBReadPolicy: { TableName: !Ref Table }
+        - !If
+          - HasSlack
+          - AWSSecretsManagerGetSecretValuePolicy: { SecretArn: !Ref SlackSecretArn }
+          - !Ref AWS::NoValue
+      Events:
+        Monday0900:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: "cron(0 9 ? * MON *)"
+            ScheduleExpressionTimezone: Asia/Tokyo
+            State: !If [IsProd, ENABLED, DISABLED]
+
+  # --- 監視(アラームを Slack へ) ---
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+
+  AlarmFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "work-hours-report-${Env}-alarm"
+      Handler: app.handlers.scheduled.alarm
+      Environment:
+        Variables:
+          SLACK_SECRET_ARN: !Ref SlackSecretArn
+      Policies:
+        - !If
+          - HasSlack
+          - AWSSecretsManagerGetSecretValuePolicy: { SecretArn: !Ref SlackSecretArn }
+          - !Ref AWS::NoValue
+      Events:
+        Alarm:
+          Type: SNS
+          Properties: { Topic: !Ref AlarmTopic }
+
+  ApiErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "work-hours-report-${Env}-api-5xx"
+      Namespace: AWS/ApiGateway
+      MetricName: 5XXError
+      Dimensions:
+        - { Name: ApiName, Value: !Sub "work-hours-report-${Env}" }
+        - { Name: Stage, Value: v1 }
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlarmTopic]
+
+  LambdaErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "work-hours-report-${Env}-lambda-errors"
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - { Name: FunctionName, Value: !Ref ApiFunction }
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlarmTopic]
+
+  # --- Web の配信(S3 + CloudFront) ---
+  WebBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  WebOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "work-hours-report-${Env}"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        PriceClass: PriceClass_200
+        HttpVersion: http2and3
+        Origins:
+          - Id: web
+            DomainName: !GetAtt WebBucket.RegionalDomainName
+            OriginAccessControlId: !Ref WebOriginAccessControl
+            S3OriginConfig: { OriginAccessIdentity: "" }
+        DefaultCacheBehavior:
+          TargetOriginId: web
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # CachingOptimized
+          ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03 # SecurityHeadersPolicy
+          Compress: true
+        CustomErrorResponses: # 画面の URL を直接開いても index.html を返す(SPA)
+          - { ErrorCode: 403, ResponseCode: 200, ResponsePagePath: /index.html }
+          - { ErrorCode: 404, ResponseCode: 200, ResponsePagePath: /index.html }
+
+  WebBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: { Service: cloudfront.amazonaws.com }
+            Action: s3:GetObject
+            Resource: !Sub "${WebBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+
+Outputs:
+  WebUrl:
+    Value: !Sub "https://${Distribution.DomainName}"
+  ApiUrl:
+    Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com/v1"
+  UserPoolId:
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Value: !Ref UserPoolClient
+  WebBucketName:
+    Value: !Ref WebBucket
+  DistributionId:
+    Value: !Ref Distribution

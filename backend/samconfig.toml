@@ -1,0 +1,21 @@
+version = 0.1
+
+[default.global.parameters]
+region = "ap-northeast-1"
+
+[default.build.parameters]
+cached = true
+
+[dev.deploy.parameters]
+stack_name = "work-hours-report-dev"
+capabilities = "CAPABILITY_IAM"
+resolve_s3 = true
+parameter_overrides = "Env=dev"
+confirm_changeset = false
+
+[prod.deploy.parameters]
+stack_name = "work-hours-report-prod"
+capabilities = "CAPABILITY_IAM"
+resolve_s3 = true
+parameter_overrides = "Env=prod"
+confirm_changeset = true

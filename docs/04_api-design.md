@@ -7,7 +7,7 @@ API の正は [`api/openapi.yaml`](../api/openapi.yaml)(OpenAPI 3.0)。この文
 ## 方針
 
 - **仕様を先に書く**: 画面やバックエンドを作る前に `openapi.yaml` を更新し、マージリクエストでレビューする。フロントとバックはこれを約束として並行に作る
-- **型は生成する**: Web の TypeScript の型は `openapi-typescript` で生成し、手で書かない。バックエンドは同じ定義を API Gateway のリクエスト検証に使う
+- **型は生成する**: Web の TypeScript の型は `openapi-typescript` で生成し、手で書かない。バックエンドは同じ定義に合わせて、ハンドラーで入力の形を確かめる
 - **Swagger UI**: dev 環境に Swagger UI を置き、ブラウザから API を試せるようにする
 - **REST**: リソースは名詞、操作は HTTP メソッド。自分のデータは `/me/...`、管理者用は `/admin/...` に分ける
 - **日付と時刻**: 日付は `YYYY-MM-DD`、時刻は ISO 8601(`+09:00` 付き)。月は `YYYY-MM`

@@ -41,12 +41,12 @@ flowchart LR
 | --- | --- | --- |
 | S3 + CloudFront | Web SPA の配信 | 静的ファイルだけなのでサーバー不要。CloudFront で HTTPS とキャッシュ。URL は CloudFront が付けるもの(`https://<id>.cloudfront.net`)を使う |
 | Cognito | ログイン、ユーザーとグループ(admin / member)の管理 | API Gateway の認可と直接つながる。パスワード管理を自前で持たない |
-| API Gateway(REST) | API の入口、トークン検証、リクエストの検証、スロットリング | Cognito オーソライザーと OpenAPI からの定義が使える |
+| API Gateway(REST) | API の入口、トークン検証、スロットリング | Cognito オーソライザーで、トークンのない呼び出しを Lambda の手前で断れる |
 | Lambda(Python) | API の処理、定期処理 | 呼ばれた分だけの課金 |
 | DynamoDB | 全データの保存 | サーバーレスと相性がよく、アクセスパターンが決まっているので RDB は不要 |
 | EventBridge Scheduler | 平日 18:00 の未提出者の投稿、月曜 9:00 の週次レポート | タイムゾーン(Asia/Tokyo)を指定できる |
 | Secrets Manager | Slack の Incoming Webhook URL | URL を知っていれば誰でも投稿できるため、コードや環境変数に置かない |
-| CloudWatch | ログ、メトリクス、アラーム | Lambda と API Gateway の標準 |
+| CloudWatch | ログ、メトリクス、アラーム | Lambda と API Gateway の標準。アラームは SNS → alarm Lambda → Slack と流す |
 | AWS Budgets | 費用が月 500 円を超えたらメールで知らせる | 消し忘れや想定外のアクセスに気付くため |
 | Slack | 未提出者の投稿、週次レポート、アラームの通知先 | 利用者が普段見ている場所に届ける |
 
@@ -64,7 +64,7 @@ sequenceDiagram
   participant D as DynamoDB
 
   B->>G: PUT /me/reports/2027-01-12/p-001 (ID トークン)
-  G->>G: Cognito でトークン検証、形のチェック
+  G->>G: Cognito でトークン検証
   G->>L: リクエスト + ユーザー ID
   L->>D: プロジェクトとその日の日報を読む
   L->>L: 進行中か、24時間を超えないかを確かめる

@@ -51,7 +51,7 @@ API の正は [`api/openapi.yaml`](../api/openapi.yaml)(OpenAPI 3.0)。この文
 
 | HTTP | code | いつ |
 | --- | --- | --- |
-| 400 | `VALIDATION_ERROR` | 形式の誤り(時間が 0.25 単位でないなど) |
+| 400 | `VALIDATION_ERROR` | 形式の誤り(時間が 0.25 単位でない、未来の日付など) |
 | 401 | `UNAUTHORIZED` | トークンがない、期限切れ |
 | 403 | `FORBIDDEN` | admin でない、締めた月の修正 |
 | 404 | `NOT_FOUND` | 日報やプロジェクト、ユーザーがない |

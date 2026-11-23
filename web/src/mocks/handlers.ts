@@ -4,6 +4,7 @@
  */
 import { http, HttpResponse } from 'msw';
 import type { Project, ProjectMonth } from '../api/types';
+import { todayIso } from '../lib/dates';
 import { validateHours } from '../lib/hours';
 import type { MockDb } from './db';
 
@@ -48,6 +49,7 @@ export function createHandlers(db: MockDb, base = '/api') {
       const body = (await request.json()) as { hours: number; note?: string };
       const invalid = validateHours(body.hours);
       if (invalid) return err(400, 'VALIDATION_ERROR', invalid);
+      if (date > todayIso()) return err(400, 'VALIDATION_ERROR', '未来の日付には登録できません');
       const project = db.projects.find((p) => p.projectId === projectId);
       if (!project) return err(404, 'NOT_FOUND', 'プロジェクトが見つかりません');
       if (project.status !== 'ACTIVE') return err(422, 'PROJECT_CLOSED', '終了したプロジェクトには登録できません');

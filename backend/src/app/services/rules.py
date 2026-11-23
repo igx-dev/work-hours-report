@@ -36,3 +36,10 @@ def editable_error(target: date, today: date, is_admin: bool) -> str | None:
     if target < first_of_last_month:
         return "締めた月の日報は直せません"
     return None
+
+
+def future_error(target: date, today: date) -> str | None:
+    """未来の日付の日報は出せない(今日まで)。"""
+    if target > today:
+        return "未来の日付には登録できません"
+    return None

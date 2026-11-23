@@ -24,6 +24,8 @@ class ReportService:
     def put(self, user_id, day: date, project_id, hours, note, *, is_admin) -> dict:
         if message := rules.validate_hours(hours):
             raise validation(message)
+        if message := rules.future_error(day, today=self.today()):
+            raise validation(message)
         self._check_editable(day, is_admin)
         project = self._active_project(project_id)
 

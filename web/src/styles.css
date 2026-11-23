@@ -171,6 +171,7 @@ tr.weekend td { background: #fafbfc; }
 tr.weekend td, tr.weekend .muted { color: #9aa5ae; }
 tr.weekend .link { color: #7d97a6; }
 tr.selected td { background: var(--ok-bg); }
+tr.future td { color: #b8c0c7; }
 
 .badge {
   display: inline-block;

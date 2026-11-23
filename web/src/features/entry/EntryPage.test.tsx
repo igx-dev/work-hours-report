@@ -52,6 +52,17 @@ describe('日付', () => {
     expect(screen.getByRole('button', { name: '今日' })).toBeDisabled();
   });
 
+  test('未来には進めない(今日を開いている時は「次の日」を押せない)', async () => {
+    await renderPage(<EntryPage />, { data: withProjects() });
+    expect(screen.getByRole('button', { name: '次の日' })).toBeDisabled();
+    expect(screen.getByLabelText('日付')).toHaveAttribute('max', TODAY);
+  });
+
+  test('URL で未来の日付を指定されても、今日を開く', async () => {
+    await renderPage(<EntryPage />, { data: withProjects(), route: '/?date=2999-01-01' });
+    expect(screen.getByLabelText('日付')).toHaveValue(TODAY);
+  });
+
   test('URL の ?date= で日付を指定して開ける', async () => {
     await renderPage(
       <Routes>

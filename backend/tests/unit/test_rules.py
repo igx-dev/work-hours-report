@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from app.services.rules import daily_total_error, editable_error, validate_hours
+from app.services.rules import daily_total_error, editable_error, future_error, validate_hours
 
 # --- 時間の単位と範囲 ---
 
@@ -51,3 +51,12 @@ def test_前々月の日報は直せない():
 def test_adminは締めた月も直せる():
     assert editable_error(date(2026, 11, 30), today=TODAY, is_admin=True) is None
 
+
+
+def test_今日までは出せる():
+    assert future_error(date(2027, 1, 12), today=TODAY) is None
+    assert future_error(date(2027, 1, 11), today=TODAY) is None
+
+
+def test_未来の日付には出せない():
+    assert future_error(date(2027, 1, 13), today=TODAY) == "未来の日付には登録できません"

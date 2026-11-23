@@ -49,7 +49,7 @@ backend/
 ### 日報の登録(`PUT /me/reports/{date}/{projectId}`)
 
 1. パスとボディの形を確かめる(日付の形式、時間が数値か)。0.25 単位と 0.25〜24 は業務ルール(`rules.py`)で確かめる
-2. 締めた月なら 403(admin を除く)
+2. 未来の日付なら 400、締めた月なら 403(admin を除く)
 3. Project を読み、`ACTIVE` でなければ 422(`PROJECT_CLOSED`)
 4. その日の自分の日報を読み、今回の分を置き換えた合計が 24 を超えたら 422(`DAILY_LIMIT_EXCEEDED`)
 5. Report を書き込み、200 を返す

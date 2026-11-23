@@ -87,3 +87,9 @@ def test_日報を削除できる_なければ404(service, repo):
         service.delete("u-1", date(2027, 1, 12), "p-001", is_admin=False)
     assert e.value.code == "NOT_FOUND"
 
+
+
+def test_未来の日付には登録できず400(service):
+    with pytest.raises(AppError) as e:
+        put(service, day="2027-01-13")
+    assert (e.value.status, e.value.code) == (400, "VALIDATION_ERROR")
